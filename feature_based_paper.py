@@ -5,7 +5,7 @@ from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Quaternion, Pose, Point, Vector3
 from std_msgs.msg import Header, ColorRGBA
 import math, numpy as np
-import tf
+import tf2_ros, tf
 from scipy import stats
 
 
@@ -23,7 +23,7 @@ class ClusterPaper():
         # defining constants
         self.ANGLE_INCREMENT = 0.017501922324299812
         self.DISTANCE_THETA = 0.1 ** 2 # this constant is for the clustering process
-        self.MINIMUM_CORNER_ANGLE = 0.1 # this constant is for seeing if 2 lines are angled enough to form a corner
+        self.MINIMUM_CORNER_ANGLE = 0.7 # this constant is for seeing if 2 lines are angled enough to form a corner
         self.MINIMUM_LINE_LENGTH = 0.3 # this constant is for seeing if a line has the minumum length to be by a corner (?)
         self.MINIMUM_POINT_COUNT = 4 # this constant is for seeing if a line has a minumum amount of points
         self.RANGE_DIVIDENT = 3 # this constant is to limit the points we are looking at when it comes to finding corners
@@ -46,6 +46,8 @@ class ClusterPaper():
 
         # initializing rospy publishers and subscribers
         rospy.init_node('clusters', anonymous=True)
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         self.line_pub = rospy.Publisher('visualization_marker', Marker, queue_size=10)
         rospy.Subscriber('scan', LaserScan, self.callback)
 
@@ -98,7 +100,7 @@ class ClusterPaper():
         lines = []
         corners = self.potential_corners(clusters)
 
-        # The following is terrible and to be removed
+        # The following is a rough idea that I had but will most likely be replaced with the dissimilarity matrix
         # for potential_corner_list in corners:
         #     potential_corner = potential_corner_list[0]
         #     add_point = True
@@ -110,21 +112,35 @@ class ClusterPaper():
         #         self.corners.append(potential_corner)
         #
 
-        # TODO the points currently move because they are set relatively to the robot, which is how they are found
-        # need to find a way to find the points relative to the robot and set them
-        # relative to the fixed frame...
+        self.create_dissimilarity_matrix(self.corners, corners)
         self.corners.extend(corners)
         for corner in self.corners:
-            self.show_point_in_rviz(corner[0].x, corner[0].y)
+            self.show_point_in_rviz(corner[0])
 
-        # for cluster in clusters:
-        #     if len(cluster) > 1:
-        #         start_point, end_point, _, _ = self.detect_line(cluster)
-        #
-        #         self.show_line_in_rviz(start_point, end_point)
 
-    #def create_dissimilarity_matrix(self, existing_cluster, new_cluster):
+    def create_dissimilarity_matrix(self, existing_cluster, new_cluster):
+        """ This function creates a dissimilarity matrix out of the given clusters
 
+        Args:
+            existing_cluster (list): list of clustered points
+            new_cluster      (list): list of clustered points
+                                   |            0                           |  |           1              |
+                                   [the point that should be the corner point, the angle of the second line,
+                                   |           2                   | |         3               |  |         4                  |
+                                   the cluster from the second line, the angle of the first line, the cluster of the first line]
+
+        """
+        dissimilarity = np.zeros((len(existing_cluster), len(new_cluster)))
+        for i in range(len(existing_cluster)):
+            for j in range(len(new_cluster)):
+                # i and j need to be matched somehow?
+                if (abs(existing_cluster[i][1] - new_cluster[j][1]) < 0.1 and abs(existing_cluster[i][3] - new_cluster[j][3])): # 0.1 is probably wrong and the matching needs to be included here
+                    self.show_point_in_rviz(existing_cluster[i][0], ColorRGBA(0.0, 0.0, 1.0, 0.8))
+                    dissimilarity[i, j] = self.distance(existing_cluster[i][0], new_cluster[j][0])
+                else:
+                    dissimilarity[i, j] = np.inf
+
+        rospy.loginfo(dissimilarity)
 
 
     # TODO Look into principle component Analyses for corner finding
@@ -173,6 +189,7 @@ class ClusterPaper():
         for i in range(len(lines) - 1):
 
             # The next set of if is to rule out line segments that are connected but not corners
+
             if abs(lines[i + 1][0] - lines[i][0]) <= self.MINIMUM_CORNER_ANGLE:
                 # do something
                 continue
@@ -180,42 +197,39 @@ class ClusterPaper():
                 or lines[i + 1][2] <= self.MINIMUM_LINE_LENGTH or lines[i][2] <= self.MINIMUM_LINE_LENGTH):
                 # do something again
                 continue
+
             # At this point we want to think we are sure that we are dealing with a propper corner
             r = min(lines[i + 1][2], lines[i][2]) / self.RANGE_DIVIDENT
 
             potential_corner_point = lines[i][5][-1][2]
-            #potential_corner_point = Point(x, y, self.Z_OFFSET)
 
-            for j in range(20): # TODO 20 is a terrible hardcoded number but seems better that while True
+            for j in range(20): # TODO 20 is a terrible hardcoded number but seems better that 'while True:'
                 max_distance_point = Point()
                 max_distance = 0
                 points_between_i_j = []
                 pi = Point() # lines[i][5][-1] # starting at the end of the cluster to go from closest to the point to farthest away
                 pj = Point() # lines[i + 1][5][0]
-                for point in reversed(lines[i][5]):
-                    #_, _, x, y, _ = point
 
+                for point in reversed(lines[i][5]):
+                    # is the point we are looking at outside the range of r?
                     if self.distance(potential_corner_point, point[2]) > r:
+                        # yes? then we have all the points and don't need to continue searching
                         break
+                    # no? then we add the point to the list of points to be analyzed and look at the next point
                     pi = point[2]
                     points_between_i_j.append(point[2])
 
-                # rospy.loginfo("There are {} elements in lines".format(len(lines)))
-                # rospy.loginfo("which at {} has {} elements".format(i + 1, len(lines[i + 1])))
+
                 for point in lines[i + 1][5]:
+                    # is the point we are looking at outside the range of r?
                     if self.distance(potential_corner_point, point[2]) > r:
+                        # yes? then we have all the points and don't need to continue searching
                         break
+                    # no? then we add the point to the list of points to be analyzed and look at the next point
                     pj = point[2]
                     points_between_i_j.append(point[2])
 
                 for point in points_between_i_j:
-                    if type(pi) != type(Point()) or type(pj) != type(Point()) or type(point) != type(Point()):
-                        rospy.loginfo((pi))
-                        rospy.loginfo(type(pi))
-                        rospy.loginfo((pj))
-                        rospy.loginfo(type(pj))
-                        rospy.loginfo((point))
-                        rospy.loginfo(type(point))
                     temp_distance = self.distance_line_to_point(pi, pj, point)
                     if temp_distance > max_distance:
                         max_distance = temp_distance
@@ -227,18 +241,54 @@ class ClusterPaper():
                 potential_corner_point = max_distance_point
                 # TODO Somehow r needs to be decreased...
 
+            # TODO figure out if there is a way to push the try except part into a function
+            try:
+                trans = self.tf_buffer.lookup_transform('odom', 'base_footprint', rospy.Time())
+            except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+                pass
+
+            potential_corner_point = self.translate_point_view(trans.transform, potential_corner_point)
+
+            #                                             alpha_2          cluster_2        alpha_1      cluster_1
             corner_points.append([potential_corner_point, lines[i + 1][0], lines[i + 1][5], lines[i][0], lines[i][5]])
 
         for line in lines:
             self.show_line_in_rviz(line[3], line[4])
 
         #for corner in corner_points:
-        #    self.show_point_in_rviz(corner[0].x, corner[0].y)
+        #    self.show_point_in_rviz(corner[0])
 
         return corner_points
 
 
+    def translate_point_view(self, trans, point):
+        """ This function takes a point and a destination frame and translates the Point to the new frame
 
+        Args:
+            trans ('geometry_msgs.msg._Transform.Transform'): this argument contains the translation and
+                    rotation information needed to go from the current frame to the destination frame
+            point (Point): the Point to be translated to the new frame
+
+        Returns:
+            new_point (Point): the Point translated to the new frame
+
+        """
+
+        homogenous_point = np.array([point.x, point.y, point.z, 1]) # 4 x 1
+        transformation_quaternion = np.array([trans.rotation.x, trans.rotation.y, trans.rotation.z, trans.rotation.w])
+        rotation_matrix = tf.transformations.quaternion_matrix(transformation_quaternion) # 4 x 4
+
+        point_translation_matrix = np.identity(4)            # [1 0 0 x]
+        point_translation_matrix[0][3] = trans.translation.x # |0 1 0 y|  => 4 x 4
+        point_translation_matrix[1][3] = trans.translation.y # |0 0 1 z|
+        point_translation_matrix[2][3] = trans.translation.z # [0 0 0 1]
+
+        point_matrix = np.matmul(point_translation_matrix, rotation_matrix) # 4 x 4 @ 4 x 4 => 4 x 4
+
+        homogenous_transformed_point = np.matmul(point_matrix, homogenous_point) # 4 x 4 @ 4 x 1 => 4 x 1
+
+        new_point = Point(homogenous_transformed_point[0], homogenous_transformed_point[1], homogenous_transformed_point[2])
+        return new_point
 
 
     def clustering(self, data):
@@ -277,44 +327,51 @@ class ClusterPaper():
         """
 
 
-    def detect_line(self, cluster):
+    def detect_line(self, cluster, method="linear regression"):
         """ This function is to find the corner points of the cluster provided
 
         Args:
             cluster (list): A list of points
+            (method (string)): optional argument incase one day I want to change the method of finding a line
 
         Returns:
             start_point (Point): The first corner of the detected line
-            end_point (Point): The end point of the detected line
-            slope (float): the float vaulue equivalent to m in mx + b
-            intercept (float): the float value equivalent to b in mx + b
+            end_point   (Point): The end point of the detected line
+            slope       (float): the float vaulue equivalent to m in mx + b
+            intercept   (float): the float value equivalent to b in mx + b
         """
 
         # Linear Regression Method
-        xs = []
-        ys = []
+        if method == "linear regression":
+            xs = []
+            ys = []
 
-        for c in cluster:
-            x = c[2].x
-            y = c[2].y
-            xs.append(x)
-            ys.append(y)
-        xs = np.array(xs)
-        ys = np.array(ys)
+            for c in cluster:
+                x = c[2].x
+                y = c[2].y
+                xs.append(x)
+                ys.append(y)
+            xs = np.array(xs)
+            ys = np.array(ys)
 
-        slope, intercept, _, _, _ = stats.linregress(xs,ys)
-        start_point = Point()
-        end_point = Point()
-        start_point.x = cluster[0][2].x
-        start_point.y = intercept + slope * start_point.x
+            slope, intercept, _, _, _ = stats.linregress(xs,ys)
+            start_point = Point()
+            end_point = Point()
+            start_point.x = cluster[0][2].x
+            start_point.y = intercept + slope * start_point.x
 
-        end_point.x = cluster[-1][2].x
-        end_point.y = intercept + slope * end_point.x
+            end_point.x = cluster[-1][2].x
+            end_point.y = intercept + slope * end_point.x
 
 
         # First and Last point method
-        #start_point = cluster[0][2]
-        #end_point = cluster[-1][2]
+        elif method == "simple":
+            start_point = cluster[0][2]
+            end_point = cluster[-1][2]
+
+            # slope and intercept are not defined here so for now they are 0
+            slope = 0
+            intercept = 0
         return start_point, end_point, slope, intercept
 
     # def addCornerPoint(corner_list, corner):
@@ -330,7 +387,7 @@ class ClusterPaper():
 
         Args:
             distance (float): The distance that the Robot is away from the point that is being viewed
-            angle (float): The angle that the Robot is away from the point that is being viewed
+            angle    (float): The angle that the Robot is away from the point that is being viewed
 
         Returns:
             pointX (float): the X coordinate
@@ -361,23 +418,22 @@ class ClusterPaper():
 
         self.marker_id += 1
 
-    def show_point_in_rviz(self, pointX, pointY):
+    def show_point_in_rviz(self, point, point_color=ColorRGBA(0.0, 1.0, 0.0, 0.8)):
         """ This function takes an X and a Y to then place a Marker in the frame that is passed along
 
         Args:
-            pointX (float): X coordinate
-            pointY (float): Y coordinate
-            (frame) (str): what frame the coordinates should be displayed on
+            point       (Point): Point to be displayed
+            (point_color (ColorRGBA)): Optional color argument to change the color of the point
         """
         marker = Marker(
                     header=Header(
-                    frame_id=self.base_marker_header_frame_id),
-                    #frame_id='odom'),
+                    #frame_id=self.base_marker_header_frame_id),
+                    frame_id='odom'), # odom is the fixed frame, it sounds like with real data that will not be available?
                     id=self.point_id,
                     type=Marker.SPHERE,
-                    pose=Pose(Point(pointX, pointY, self.Z_OFFSET), Quaternion(0, 0, 0, 1)),
+                    pose=Pose(point, Quaternion(0, 0, 0, 1)),
                     scale=Vector3(0.1, 0.1, 0.1),
-                    color=ColorRGBA(0.0, 1.0, 0.0, 0.8),
+                    color=point_color,
                     lifetime=rospy.Duration(1))
         self.line_pub.publish(marker)
         self.point_id += 1
