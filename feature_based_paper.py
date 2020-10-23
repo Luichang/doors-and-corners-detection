@@ -178,8 +178,15 @@ class ClusterPaper():
         pointY = distance * math.sin(angle)
         return pointX, pointY
 
-    def show_line_in_rviz(self, start_point, end_point):
+    def show_line_in_rviz(self, start_point, end_point, line_color=ColorRGBA(1, 0, 0, 0.7)):
+        """ This function takes two points to then place a Marker line in the frame
+        With an optional argument to set the color
 
+        Args:
+            start_point       (Point): Start Point from the line to be displayed
+            end_point         (Point): End Point from the line to be displayed
+            (point_color      (ColorRGBA)): Optional color argument to change the color of the point
+        """
         marker = Marker()
         marker.type = self.base_marker_type
         marker.id = self.marker_id
