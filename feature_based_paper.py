@@ -28,7 +28,6 @@ class ClusterPaper():
         self.MINIMUM_POINT_COUNT = 4 # this constant is for seeing if a line has a minumum amount of points
         self.RANGE_DIVIDENT = 3 # this constant is to limit the points we are looking at when it comes to finding corners
         self.Z_OFFSET = 0.1
-        self.line_color = ColorRGBA(1, 0, 0, 0.7)
 
         # marker constants
         self.base_marker_type = Marker.LINE_STRIP
@@ -192,18 +191,19 @@ class ClusterPaper():
 
         marker.points.append(start_point)
         marker.points.append(end_point)
-        marker.colors.append(self.line_color)
-        marker.colors.append(self.line_color)
+        marker.colors.append(line_color)
+        marker.colors.append(line_color)
 
         self.line_pub.publish(marker)
 
         self.marker_id += 1
 
     def show_point_in_rviz(self, point, point_color=ColorRGBA(0.0, 1.0, 0.0, 0.8)):
-        """ This function takes an X and a Y to then place a Marker in the frame that is passed along
+        """ This function takes a point to then place a Marker at that position
+        With an optional argument to set the color
 
         Args:
-            point       (Point): Point to be displayed
+            point        (Point): Point to be displayed
             (point_color (ColorRGBA)): Optional color argument to change the color of the point
         """
         marker = Marker(
