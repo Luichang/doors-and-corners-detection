@@ -281,22 +281,7 @@ class ClusterPaper():
 
         for point in points[1:]:
             if self.distance(clusters[-1][-1][2], point[2]) < self.DISTANCE_THETA:
-
-                if len(clusters[-1]) > 1:
-                    _, _, first_slope, _ = self.detect_line([clusters[-1][0], clusters[-1][1]])
-                    _, _, second_slope, _ = self.detect_line([clusters[-1][-1], point])
-                    _, _, third_slope, _ = self.detect_line([clusters[-1][0], point])
-                    #rospy.loginfo(abs(math.atan(first_slope) - math.atan(second_slope)))
-                    if (abs(math.atan(first_slope) - math.atan(third_slope)) < 0.2 and
-                        abs(math.atan(second_slope) - math.atan(third_slope)) < 0.2):
-                        clusters[-1].append(point)
-                    else:
-                        clusters.append([point])
-                else:
-                    clusters[-1].append(point)
-
-                #clusters[-1].append(point)
-
+                clusters[-1].append(point)
             else:
                 clusters.append([point])
         rospy.loginfo(len(clusters))
