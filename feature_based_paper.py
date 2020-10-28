@@ -253,8 +253,9 @@ class ClusterPaper():
         #         self.corners.append(potential_corner)
         #
 
-        self.create_dissimilarity_matrix(self.corners, corners)
-        self.corners.extend(corners)
+        if if len(corners) > 0:
+            self.create_dissimilarity_matrix(self.corners, corners)
+            self.corners.extend(corners)
         for corner in self.corners:
             self.show_point_in_rviz(corner[0])
 
