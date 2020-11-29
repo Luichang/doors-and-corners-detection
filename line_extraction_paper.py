@@ -21,9 +21,10 @@ class LineExtractionPaper():
     def __init__(self):
 
         # defining constants
-        self.ANGLE_INCREMENT = 0.017501922324299812 # degrees
+        self.ANGLE_INCREMENT = 0 # 0.017501922324299812 # degrees
+        self.ANGLES = []
 
-        self.SIGMA_R = 0.03 # meter
+        self.SIGMA_R = 0.03 # meters
         self.LAMBDA = 10 # degrees
         self.D_MAX_CONSTANT = math.sin(math.radians(self.ANGLE_INCREMENT))/math.sin(math.radians(self.LAMBDA-self.ANGLE_INCREMENT))
 
@@ -95,7 +96,7 @@ class LineExtractionPaper():
         marker = Marker(
                     header=Header(
                     #frame_id=self.base_marker_header_frame_id),
-                    frame_id='odom'), # odom is the fixed frame, it sounds like with real data that will not be available?
+                    frame_id='cloud'), # odom is the fixed frame, it sounds like with real data that will not be available?
                     id=self.point_id,
                     type=Marker.SPHERE,
                     pose=Pose(point, Quaternion(0, 0, 0, 1)),
@@ -112,6 +113,11 @@ class LineExtractionPaper():
             data (LaserScan): the data that the LaserScan returns
         """
 
+        if not self.ANGLES:
+            print(data.angle_min, data.angle_max)
+            self.ANGLE_INCREMENT = data.angle_increment
+            self.ANGLES = [x for x in np.arange(data.angle_min, data.angle_max, self.ANGLE_INCREMENT)]
+            self.D_MAX_CONSTANT = math.sin(math.radians(self.ANGLE_INCREMENT))/math.sin(math.radians(self.LAMBDA-self.ANGLE_INCREMENT))
 
         points = self.preprocessing(data)
 
@@ -154,7 +160,7 @@ class LineExtractionPaper():
 
         points = []
 
-        for i, scan in enumerate(scans):
+        for i, scan in zip(self.ANGLES, scans):
 
             # setting default values
             point_to_add = Point()
@@ -162,10 +168,10 @@ class LineExtractionPaper():
 
             # if the scan returns a value that is not infinity, the default values are not used
             if scan != float('inf'):
-                pointX, pointY = self.polar_to_cartesian(scan, self.ANGLE_INCREMENT * (i + 1))
+                pointX, pointY = self.polar_to_cartesian(scan, i) #self.ANGLE_INCREMENT * (i + 1))
                 point_to_add = Point(pointX, pointY, self.Z_OFFSET)
                 rupture = False
-            points.append([point_to_add, [scan, self.ANGLE_INCREMENT * (i + 1)], rupture])
+            points.append([point_to_add, [scan, i], rupture]) #self.ANGLE_INCREMENT * (i + 1)], rupture])
 
         points = self.rupture_detection(points)
 
