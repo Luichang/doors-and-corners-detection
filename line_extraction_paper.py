@@ -269,5 +269,5 @@ class LineExtractionPaper():
                 if n_iterator == len(breakpoints):
                     break
             #if (n_iterator - n_start_of_region + 1) > N_min: # N_min is minimum number of support points
-                # L* <- (I T , n i , n e ) /* Extract lines from the current region */
-                # L <- S union S* /* Add the lines to the main list */
+                # L* <- Phi(I^T , n_i , n_e ) /* Extract lines from the current region */ Phi is a Kernel for line extraction
+                # L <- Omega^S union Omega^S_* /* Add the lines to the main list */
