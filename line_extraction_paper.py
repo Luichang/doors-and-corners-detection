@@ -265,15 +265,45 @@ class LineExtractionPaper():
 
         """
 
-        list_of_lines = [] # a line is a list consisting of: p = polar discance of the line, a = polar angle, covariance matrix of (p, a)^T, xa = one end of the line, ya = same end only y coordinate, xb = other end x coordinate, yb = other end only y coordinate
+        list_of_lines = [] # a line is a list consisting of:
+        # p = polar discance of the line, a = polar angle, covariance matrix of (p, a)^T,
+        # xa = one end of the line, ya = same end only y coordinate,
+        # xb = other end x coordinate, yb = other end only y coordinate
         n_iterator = 0
         while n_iterator < len(breakpoints):
             n_start_of_region = n_iterator
             n_iterator = n_start_of_region + 1 # we will not look for the last point of the region
+
+            # this loop groups continuous wall segments
             while breakpoints[n_iterator][3] == False and breakpoints[n_iterator][2] == False:
                 n_iterator = n_iterator + 1
                 if n_iterator == len(breakpoints):
                     break
-            #if (n_iterator - n_start_of_region + 1) > N_min: # N_min is minimum number of support points
+
+            # at this point we have a continuous line segment. This segment can span over multiple walls, connected by corners.
+            # the goal now is to split the line segments at the corners to receive not only walls but hopefully also doors.
+
+            N_min = 3
+            # for refference, n_i = n_start_of_region and n_e = n_iterator
+            if (n_iterator - n_start_of_region + 1) > N_min: # N_min is minimum number of support points
+
+                pass
                 # L* <- Phi(I^T , n_i , n_e ) /* Extract lines from the current region */ Phi is a Kernel for line extraction
+                # temp list of points that make up the whole line?
+
                 # L <- Omega^S union Omega^S_* /* Add the lines to the main list */
+
+
+
+
+
+
+
+
+    def iterative_end_point_fit(self, breakpoints):
+        """
+
+        """
+
+
+        return None
