@@ -177,6 +177,7 @@ class LineExtractionPaper():
             elif point[3] == True and point[2] == True:
                 self.show_point_in_rviz(point[0], ColorRGBA(0.0, 1.0, 1.0, 0.8))
         #self.line_extraction(breakpoints)
+        self.line_extraction(breakpoints)
 
 
 
