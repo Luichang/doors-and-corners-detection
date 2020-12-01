@@ -85,6 +85,23 @@ class LineExtractionPaper():
         dist = (b.x - a.x) ** 2 + (b.y - a.y) ** 2
         return dist
 
+    def distance_line_to_point(self, p1, p2, p3):
+        """ This function finds the shortest distance between a line defined by two points and another point
+        The distance of the line calculated will always be perpendicular to the line the first two points span
+
+        Args:
+            p1 (Point): one point of the line. The distance to this line is what we want to calculate
+            p2 (Point): the other point of the line. The distance to this line is what we want to calculate
+            p3 (Point): this is the point whose distance to the line we are interested in
+
+        Returns:
+            dist (float): the distance from the point to the line
+        """
+        numerator = abs((p2.y - p1.y) * p3.x - (p2.x - p1.x) * p3.y + p2.x * p1.y - p2.y * p1.x)
+        denominator = math.sqrt((p2.y - p1.y) ** 2 + (p2.x - p1.x) ** 2)
+        dist = numerator / denominator
+        return dist
+
     def show_point_in_rviz(self, point, point_color=ColorRGBA(0.0, 1.0, 0.0, 0.8)):
         """ This function takes a point to then place a Marker at that position
         With an optional argument to set the color
@@ -105,6 +122,33 @@ class LineExtractionPaper():
                     lifetime=rospy.Duration(1))
         self.line_pub.publish(marker)
         self.point_id += 1
+
+    def show_line_in_rviz(self, start_point, end_point, line_color=ColorRGBA(1, 0, 0, 0.7)):
+        """ This function takes two points to then place a Marker line in the frame
+        With an optional argument to set the color
+
+        Args:
+            start_point       (Point): Start Point from the line to be displayed
+            end_point         (Point): End Point from the line to be displayed
+            (point_color      (ColorRGBA)): Optional color argument to change the color of the point
+        """
+        marker = Marker()
+        marker.type = self.base_marker_type
+        marker.id = self.marker_id
+        marker.lifetime = self.base_marker_lifetime
+        marker.header.frame_id = self.base_marker_header_frame_id
+        marker.action = self.base_marker_action
+        marker.scale.x = self.base_marker_scale_x
+        marker.pose.orientation = self.base_marker_pose_orientation
+
+        marker.points.append(start_point)
+        marker.points.append(end_point)
+        marker.colors.append(line_color)
+        marker.colors.append(line_color)
+
+        self.line_pub.publish(marker)
+
+        self.marker_id += 1
 
     def callback(self, data):
         """ Essentially the main function of the program, this will call any functions
