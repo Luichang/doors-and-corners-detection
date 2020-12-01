@@ -356,6 +356,17 @@ class LineExtractionPaper():
 
     def iterative_end_point_fit(self, list_of_points_for_lines, breakpoints, start_of_region, end_of_region):
         """
+        Rekursive Function
+        checks the given range of start_of_region and end_of_region if the continuous wall segment contains corners
+        and splits at these corners and checks both sides of the corner for more corners. Once it does not find any
+        more corners it adds the Points of the begining and end of the wall to list_of_points_for_lines
+
+        Args:
+            list_of_points_for_lines (List): List of lists, inner list contains first and last Point of a line segment
+                                             without corners
+            breakpoints (List):              List of all points with the flags as set by breakpoint_detection
+            start_of_region (int):           index of point indicating the start of a wall segment to be checked for corners
+            end_of_region (int):             index of point indicating the end of a wall segment to be checked for corners
 
         """
         minimum_distance_to_be_a_corner = 0.03 # meter, the value set is a guess and may need adjusting
