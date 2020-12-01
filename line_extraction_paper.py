@@ -211,7 +211,7 @@ class LineExtractionPaper():
             rupture = True
 
             # if the scan returns a value that is not infinity, the default values are not used
-            if scan != float('inf'):
+            if scan != 0.0:
                 pointX, pointY = self.polar_to_cartesian(scan, i) #self.ANGLE_INCREMENT * (i + 1))
                 point_to_add = Point(pointX, pointY, self.Z_OFFSET)
                 rupture = False
