@@ -33,8 +33,8 @@ class LineExtractionPaper():
 
         # marker constants
         self.base_marker_type = Marker.LINE_STRIP
-        self.base_marker_lifetime = rospy.Duration(20)
-        self.base_marker_header_frame_id = 'base_scan'
+        self.base_marker_lifetime = rospy.Duration(1)
+        self.base_marker_header_frame_id = 'cloud'
         self.base_marker_action = 0
         self.base_marker_scale_x = 0.01
         self.base_marker_pose_orientation = Quaternion(0.0, 0.0, 0.0, 1.0)
