@@ -298,6 +298,7 @@ class LineExtractionPaper():
             if self.distance(last_point[0], current_point[0]) > distance_max:
                 breakpoints[-2][3] = True
                 breakpoints[-1][3] = True
+            last_point = current_point
 
         return breakpoints
 
@@ -314,14 +315,14 @@ class LineExtractionPaper():
         # xa = one end of the line, ya = same end only y coordinate,
         # xb = other end x coordinate, yb = other end only y coordinate
         n_iterator = 0
-        while n_iterator < len(breakpoints):
+        while n_iterator < len(breakpoints) - 1:
             n_start_of_region = n_iterator
             n_iterator = n_start_of_region + 1 # we will not look for the last point of the region
 
             # this loop groups continuous wall segments
             while breakpoints[n_iterator][3] == False and breakpoints[n_iterator][2] == False:
                 n_iterator = n_iterator + 1
-                if n_iterator == len(breakpoints):
+                if n_iterator >= len(breakpoints) - 1:
                     break
 
             # at this point we have a continuous line segment. This segment can span over multiple walls, connected by corners.
