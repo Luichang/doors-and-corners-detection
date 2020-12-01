@@ -314,6 +314,7 @@ class LineExtractionPaper():
         # p = polar discance of the line, a = polar angle, covariance matrix of (p, a)^T,
         # xa = one end of the line, ya = same end only y coordinate,
         # xb = other end x coordinate, yb = other end only y coordinate
+        list_of_points_for_lines = []
         n_iterator = 0
         while n_iterator < len(breakpoints) - 1:
             n_start_of_region = n_iterator
@@ -332,8 +333,16 @@ class LineExtractionPaper():
             # for refference, n_i = n_start_of_region and n_e = n_iterator
             if (n_iterator - n_start_of_region + 1) > N_min: # N_min is minimum number of support points
 
-                pass
                 # L* <- Phi(I^T , n_i , n_e ) /* Extract lines from the current region */ Phi is a Kernel for line extraction
+                self.iterative_end_point_fit(list_of_points_for_lines, breakpoints, n_start_of_region, n_iterator)
+
+                if list_of_points_for_lines:
+                    for line in list_of_points_for_lines:
+                        line_color = ColorRGBA(1, 0, 0, 0.7)
+                        if self.distance(line[0], line[1]) < 0.7:
+                            line_color = ColorRGBA(0, 1, 0, 0.7)
+                        self.show_line_in_rviz(line[0], line[1], line_color)
+
                 # temp list of points that make up the whole line?
 
                 # L <- Omega^S union Omega^S_* /* Add the lines to the main list */
@@ -344,11 +353,24 @@ class LineExtractionPaper():
 
 
 
-
-    def iterative_end_point_fit(self, breakpoints):
+    def iterative_end_point_fit(self, list_of_points_for_lines, breakpoints, start_of_region, end_of_region):
         """
 
         """
+        minimum_distance_to_be_a_corner = 0.03 # meter, the value set is a guess and may need adjusting
+        N_min = 3 # this probably should be turned into a variable part of self
+        if (end_of_region - start_of_region + 1) <= N_min:
+            return None
+        max_distance = 0
+        farthest_point = -1
+        for potential_corner in range(start_of_region + 1, end_of_region):
+            distance_to_line = self.distance_line_to_point(breakpoints[start_of_region][0], breakpoints[end_of_region][0], breakpoints[potential_corner][0])
+            if distance_to_line > minimum_distance_to_be_a_corner and distance_to_line > max_distance:
+                max_distance = distance_to_line
+                farthest_point = potential_corner
 
-
-        return None
+        if farthest_point == -1:
+            list_of_points_for_lines.append([breakpoints[start_of_region][0], breakpoints[end_of_region][0]])
+        else:
+            self.iterative_end_point_fit(list_of_points_for_lines, breakpoints, start_of_region, farthest_point)
+            self.iterative_end_point_fit(list_of_points_for_lines, breakpoints, farthest_point, end_of_region)
