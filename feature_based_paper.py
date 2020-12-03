@@ -22,6 +22,7 @@ class ClusterPaper():
 
         # defining constants
         self.ANGLE_INCREMENT = 0.017501922324299812
+        self.ANGLES = []
         self.DISTANCE_THETA = 0.1 ** 2 # this constant is for the clustering process
         self.MINIMUM_CORNER_ANGLE = 0.7 # this constant is for seeing if 2 lines are angled enough to form a corner
         self.MINIMUM_LINE_LENGTH = 0.3 # this constant is for seeing if a line has the minumum length to be by a corner (?)
@@ -233,6 +234,10 @@ class ClusterPaper():
         Args:
             data (LaserScan): the data that the LaserScan returns
         """
+        if not self.ANGLES:
+            self.ANGLE_INCREMENT = data.angle_increment
+            self.ANGLES = [x for x in np.arange(data.angle_min, data.angle_max, self.ANGLE_INCREMENT)]
+
         clusters = self.clustering(data)
 
         # don't want to define corners here anymore. Corners will be features and unchanging
@@ -253,7 +258,7 @@ class ClusterPaper():
         #         self.corners.append(potential_corner)
         #
 
-        if if len(corners) > 0:
+        if len(corners) > 0:
             self.create_dissimilarity_matrix(self.corners, corners)
             self.corners.extend(corners)
         for corner in self.corners:
@@ -274,9 +279,9 @@ class ClusterPaper():
         clusters = [] # this will be an array of arrays or other object that can holf many items
         points = []
 
-        for i, scan in enumerate(scans):
+        for i, scan in zip(self.ANGLES, scans):
             if scan != float('inf'):
-                pointX, pointY = self.polar_to_cartesian(scan, self.ANGLE_INCREMENT * (i + 1))
+                pointX, pointY = self.polar_to_cartesian(scan, i)
                 points.append([scan, i, Point(pointX, pointY, self.Z_OFFSET)])
         clusters.append([points[0]])
 
