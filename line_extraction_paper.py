@@ -33,7 +33,7 @@ class LineExtractionPaper():
 
         # marker constants
         self.base_marker_type = Marker.LINE_STRIP
-        self.base_marker_lifetime = rospy.Duration(1)
+        self.base_marker_lifetime = rospy.Duration(0.3)
         self.base_marker_header_frame_id = 'cloud'
         self.base_marker_action = 0
         self.base_marker_scale_x = 0.01
@@ -119,7 +119,7 @@ class LineExtractionPaper():
                     pose=Pose(point, Quaternion(0, 0, 0, 1)),
                     scale=Vector3(0.1, 0.1, 0.1),
                     color=point_color,
-                    lifetime=rospy.Duration(1))
+                    lifetime=self.base_marker_lifetime)
         self.line_pub.publish(marker)
         self.point_id += 1
 
@@ -167,16 +167,16 @@ class LineExtractionPaper():
 
         breakpoints = self.breakpoint_detection(points)
 
-        for point in breakpoints:
-            if point[3] == False and point[2] == False:
-                self.show_point_in_rviz(point[0], ColorRGBA(0.0, 1.0, 0.0, 0.8))
-            elif point[3] == False and point[2] == True:
-                self.show_point_in_rviz(point[0], ColorRGBA(1.0, 0.0, 0.0, 0.8))
-            elif point[3] == True and point[2] == False:
-                self.show_point_in_rviz(point[0], ColorRGBA(0.0, 0.0, 1.0, 0.8))
-            elif point[3] == True and point[2] == True:
-                self.show_point_in_rviz(point[0], ColorRGBA(0.0, 1.0, 1.0, 0.8))
-        #self.line_extraction(breakpoints)
+        # for point in breakpoints:
+        #     #  breakpoint            rupture
+        #     if point[3] == False and point[2] == False:
+        #         self.show_point_in_rviz(point[0], ColorRGBA(0.0, 1.0, 0.0, 0.8))
+        #     elif point[3] == False and point[2] == True:
+        #         self.show_point_in_rviz(point[0], ColorRGBA(1.0, 0.0, 0.0, 0.8))
+        #     elif point[3] == True and point[2] == False:
+        #         self.show_point_in_rviz(point[0], ColorRGBA(0.0, 0.0, 1.0, 0.8))
+        #     elif point[3] == True and point[2] == True:
+        #         self.show_point_in_rviz(point[0], ColorRGBA(0.0, 1.0, 1.0, 0.8))
         self.line_extraction(breakpoints)
 
 
@@ -340,9 +340,11 @@ class LineExtractionPaper():
                 if list_of_points_for_lines:
                     for line in list_of_points_for_lines:
                         line_color = ColorRGBA(1, 0, 0, 0.7)
-                        if self.distance(line[0], line[1]) < 0.7:
+                        if self.distance(line[0], line[1]) > 0.5 and self.distance(line[0], line[1]) < 1:
                             line_color = ColorRGBA(0, 1, 0, 0.7)
                         self.show_line_in_rviz(line[0], line[1], line_color)
+                        self.show_point_in_rviz(line[0], ColorRGBA(0, 0, 1, 0.8))
+                        self.show_point_in_rviz(line[1], ColorRGBA(1, 0, 0, 0.8))
 
                 # temp list of points that make up the whole line?
 
