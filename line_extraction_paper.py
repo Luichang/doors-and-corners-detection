@@ -217,7 +217,6 @@ class LineExtractionPaper():
         """
 
         if not self.ANGLES:
-            print(data.angle_min, data.angle_max)
             self.ANGLE_INCREMENT = data.angle_increment
             self.ANGLES = [x for x in np.arange(data.angle_min, data.angle_max, self.ANGLE_INCREMENT)]
             self.D_MAX_CONSTANT = math.sin(math.radians(self.ANGLE_INCREMENT))/math.sin(math.radians(self.LAMBDA-self.ANGLE_INCREMENT))
