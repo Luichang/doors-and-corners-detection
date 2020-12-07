@@ -102,6 +102,40 @@ class LineExtractionPaper():
         dist = numerator / denominator
         return dist
 
+    def create_wall(self, start_point, end_point):
+        """
+        This function exsists solely to create a uniform wall object. It is important to note,
+        going from the start_point to the end_point, if one looks to the left side of that, there
+        is to be empty, traversable space.
+
+        Args:
+            start_point (Point): the start point of the wall
+            end_point (Point): the end point of the wall
+
+        Returns:
+            wall (List): list containing the first and last point of a wall, indicating the
+                         straight line segment created by the wall
+        """
+        return [start_point, end_point]
+
+    def create_corner(self, corner_list, first_wall, second_wall, inner_corner=True):
+        """
+        This function exists to create a uniform corner type. The input is the 2 touching walls
+        The output is the corner connecting the two walls and the boolean of if the corner is an
+        inside corner (meaning the angle we can see from our current position is < 180, usually 90)
+        or an outside corner (meaning the angle we can see from our current position is > 180, usually 270)
+
+        Args:
+            corner_list (List): the list that will contain all existing corners
+            first_wall (List): the list of the points describing the first wall
+            second_wall (List): the list of the points describing the second wall
+            (inner_corner (bool)): optional boolean to determine, if the corner point is an inner point
+        """
+        if first_wall[0] in second_wall:
+            corner_list.append([first_wall[0], inner_corner])
+        elif first_wall[1] in second_wall:
+            corner_list.append([first_wall[1], inner_corner])
+
     def show_point_in_rviz(self, point, point_color=ColorRGBA(0.0, 1.0, 0.0, 0.8)):
         """ This function takes a point to then place a Marker at that position
         With an optional argument to set the color
@@ -144,11 +178,36 @@ class LineExtractionPaper():
         marker.points.append(start_point)
         marker.points.append(end_point)
         marker.colors.append(line_color)
-        marker.colors.append(line_color)
+        marker.colors.append(ColorRGBA(0, 0, 1, 0.7))
 
         self.line_pub.publish(marker)
 
         self.marker_id += 1
+
+    def print_wall(self, wall):
+        """
+        Function to show the lines of a wall or door
+
+        Args:
+            wall (List): list of points defining the boundry of the wall
+        """
+        line_color = ColorRGBA(1, 0, 0, 0.7)
+        if self.distance(wall[0], wall[1]) > 0.5 and self.distance(wall[0], wall[1]) < 1:
+            line_color = ColorRGBA(0, 1, 0, 0.7)
+        self.show_line_in_rviz(wall[0], wall[1], line_color)
+
+    def print_corner(self, corner):
+        """
+        Function to show the current corner
+
+        Args:
+            corner (List): list containing a point, representing the corner and a boolean
+                           representing if the corner is an inside corner (when True)
+        """
+        corner_color = ColorRGBA(1, 0, 0, 0.7)
+        if corner[1]:
+            corner_color = ColorRGBA(0, 1, 0, 0.7)
+        self.show_point_in_rviz(corner[0], corner_color)
 
     def callback(self, data):
         """ Essentially the main function of the program, this will call any functions
