@@ -50,7 +50,7 @@ class LineExtractionPaper():
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         self.line_pub = rospy.Publisher('visualization_marker', Marker, queue_size=10)
-        rospy.Subscriber('scan', LaserScan, self.callback)
+        rospy.Subscriber('scan_filtered', LaserScan, self.callback)
 
 
 
