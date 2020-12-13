@@ -102,6 +102,44 @@ class LineExtractionPaper():
         dist = numerator / denominator
         return dist
 
+    def angle_between_points(self, point1, point2):
+        """
+        Calculates the angle between 2 points.
+
+        Args:
+            point1 (Point): first point
+            point2 (Point): second point
+
+        Returns:
+            deg (float): Angle in degrees between the two points
+        """
+        x1 = point1.x
+        y1 = point1.y
+        x2 = point2.x
+        y2 = point2.y
+        dX = x2 - x1
+        dY = y2 - y1
+        rads = math.atan2(-dY, dX)
+        deg = math.degrees(rads)
+        return deg
+
+    def angle_between_lines(self, line1, line2):
+        """
+        Calculates the angle between 2 lines by first determining the angle of the individual
+        lines and then subtracting them from each other
+
+        Args:
+            line1 (List): List of start and end Point of the line
+            line2 (List): List of start and end Point of the line
+
+        Returns:
+            angle_of_lines (float): angle between the two lines in degrees
+        """
+        angle_line1 = self.angle_between_points(line1[0], line1[1])
+        angle_line2 = self.angle_between_points(line2[0], line2[1])
+        angle_of_lines = abs(angle_line1 - angle_line2)
+        return angle_of_lines
+
     def create_wall(self, start_point, end_point):
         """
         This function exsists solely to create a uniform wall object. It is important to note,
@@ -398,6 +436,14 @@ class LineExtractionPaper():
                 list_of_corners = []
                 if list_of_points_for_lines:
                     for line_index in reversed(range(len(list_of_points_for_lines))):
+                        if line_index > 0:
+                            if list_of_points_for_lines[line_index][0] in list_of_points_for_lines[line_index - 1] or list_of_points_for_lines[line_index][1] in list_of_points_for_lines[line_index - 1]:
+                                angle_of_lines = self.angle_between_lines(list_of_points_for_lines[line_index], list_of_points_for_lines[line_index - 1])
+                                if angle_of_lines < 2:
+                                    # if we get in here the corner that has been detected is not an actual corner and should be removed
+                                    list_of_points_for_lines[line_index - 1][0] = list_of_points_for_lines[line_index][0]
+                                    list_of_points_for_lines.pop(line_index)
+                                    continue
                         self.print_wall(list_of_points_for_lines[line_index])
                         for second_line_index in range(line_index, len(list_of_points_for_lines)):
                             if list_of_points_for_lines[line_index][1] == list_of_points_for_lines[second_line_index][0]:
