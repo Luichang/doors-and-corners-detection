@@ -184,8 +184,7 @@ class LineExtractionPaper():
         """
         marker = Marker(
                     header=Header(
-                    #frame_id=self.base_marker_header_frame_id),
-                    frame_id='cloud'), # odom is the fixed frame, it sounds like with real data that will not be available?
+                    frame_id=self.base_marker_header_frame_id),
                     id=self.point_id,
                     type=Marker.SPHERE,
                     pose=Pose(point, Quaternion(0, 0, 0, 1)),
