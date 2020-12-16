@@ -129,14 +129,14 @@ class LineExtractionPaper():
         lines and then subtracting them from each other
 
         Args:
-            line1 (List): List of start and end Point of the line
-            line2 (List): List of start and end Point of the line
+            line1 (List): List of start and end Point of the line with respective flags
+            line2 (List): List of start and end Point of the line with respective flags
 
         Returns:
             angle_of_lines (float): angle between the two lines in degrees
         """
-        angle_line1 = self.angle_between_points(line1[0], line1[1])
-        angle_line2 = self.angle_between_points(line2[0], line2[1])
+        angle_line1 = self.angle_between_points(line1[0][0], line1[1][0])
+        angle_line2 = self.angle_between_points(line2[0][0], line2[1][0])
         angle_of_lines = abs(angle_line1 - angle_line2)
         return angle_of_lines
 
@@ -147,8 +147,8 @@ class LineExtractionPaper():
         is to be empty, traversable space.
 
         Args:
-            start_point (Point): the start point of the wall
-            end_point (Point): the end point of the wall
+            start_point (List): the start point of the wall with the flaggs associated with that point
+            end_point (List): the end point of the wall with the flaggs associated with that point
 
         Returns:
             wall (List): list containing the first and last point of a wall, indicating the
@@ -165,14 +165,17 @@ class LineExtractionPaper():
 
         Args:
             corner_list (List): the list that will contain all existing corners
-            first_wall (List): the list of the points describing the first wall
-            second_wall (List): the list of the points describing the second wall
+            first_wall (List): the list of the points describing the first wall. Each point is made up of a
+                               list with the Point corrdinates and the flaggs associated
+            second_wall (List): the list of the points describing the second wall. Each point is made up of a
+                                list with the Point corrdinates and the flaggs associated
             (inner_corner (bool)): optional boolean to determine, if the corner point is an inner point
         """
-        if first_wall[0] in second_wall:
-            corner_list.append([first_wall[0], inner_corner])
+        #                       checking only for the points, not the flags
+        if first_wall[0][0] in [x[0] for x in second_wall]:
+            corner_list.append([first_wall, second_wall, inner_corner])
         elif first_wall[1] in second_wall:
-            corner_list.append([first_wall[1], inner_corner])
+            corner_list.append([second_wall, first_wall, inner_corner])
 
     def show_point_in_rviz(self, point, point_color=ColorRGBA(0.0, 1.0, 0.0, 0.8)):
         """ This function takes a point to then place a Marker at that position
@@ -229,22 +232,24 @@ class LineExtractionPaper():
             wall (List): list of points defining the boundry of the wall
         """
         line_color = ColorRGBA(1, 0, 0, 0.7)
-        if self.distance(wall[0], wall[1]) > 0.5 and self.distance(wall[0], wall[1]) < 1:
+        if self.distance(wall[0][0], wall[1][0]) > 0.5 and self.distance(wall[0][0], wall[1][0]) < 1:
             line_color = ColorRGBA(0, 1, 0, 0.7)
-        self.show_line_in_rviz(wall[0], wall[1], line_color)
+        self.show_line_in_rviz(wall[0][0], wall[1][0], line_color)
 
     def print_corner(self, corner):
         """
         Function to show the current corner
 
         Args:
-            corner (List): list containing a point, representing the corner and a boolean
-                           representing if the corner is an inside corner (when True)
+            corner (List): list containing two walls, representing the walls that touch
+                           and form a corner and a boolean representing if the
+                           corner is an inside corner (when True)
         """
         corner_color = ColorRGBA(1, 0, 0, 0.7)
-        if corner[1]:
+        if corner[2]:
             corner_color = ColorRGBA(0, 1, 0, 0.7)
-        self.show_point_in_rviz(corner[0], corner_color)
+
+        self.show_point_in_rviz(corner[0][1][0], corner_color)
 
     def callback(self, data):
         """ Essentially the main function of the program, this will call any functions
