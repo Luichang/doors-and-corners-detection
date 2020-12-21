@@ -502,8 +502,8 @@ class LineExtractionPaper():
                 max_distance = distance_to_line
                 farthest_point = potential_corner
 
-        if farthest_point == -1:
-            list_of_points_for_lines.append([breakpoints[start_of_region][0], breakpoints[end_of_region][0]])
+        if farthest_point == -1: # or number_of_potential_corners < 2:
+            list_of_points_for_lines.append(self.create_wall(breakpoints[start_of_region], breakpoints[end_of_region]))
         else:
             self.iterative_end_point_fit(list_of_points_for_lines, breakpoints, start_of_region, farthest_point)
             self.iterative_end_point_fit(list_of_points_for_lines, breakpoints, farthest_point, end_of_region)
