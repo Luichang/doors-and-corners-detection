@@ -279,7 +279,7 @@ class LineExtractionPaper():
         #         self.show_point_in_rviz(point[0], ColorRGBA(0.0, 0.0, 1.0, 0.8))
         #     elif point[3] == True and point[2] == True:
         #         self.show_point_in_rviz(point[0], ColorRGBA(0.0, 1.0, 1.0, 0.8))
-        self.line_extraction(breakpoints)
+        list_of_walls = self.line_extraction(breakpoints)
 
 
 
@@ -453,7 +453,6 @@ class LineExtractionPaper():
                 # L* <- Phi(I^T , n_i , n_e ) /* Extract lines from the current region */ Phi is a Kernel for line extraction
                 self.iterative_end_point_fit(list_of_points_for_lines, breakpoints, n_start_of_region, n_iterator)
 
-                list_of_corners = []
                 if list_of_points_for_lines:
                     for line_index in reversed(range(len(list_of_points_for_lines))):
                         if line_index > 0:
@@ -464,32 +463,23 @@ class LineExtractionPaper():
                                     list_of_points_for_lines[line_index - 1][0] = list_of_points_for_lines[line_index][0]
                                     list_of_points_for_lines.pop(line_index)
                                     continue
-                        self.print_wall(list_of_points_for_lines[line_index])
-                        for second_line_index in range(line_index, len(list_of_points_for_lines)):
-                            if list_of_points_for_lines[line_index][1] == list_of_points_for_lines[second_line_index][0]:
-                                self.create_corner(list_of_corners, list_of_points_for_lines[line_index], list_of_points_for_lines[second_line_index])
-                                break
 
-                            # you could think that the symmetrical case would allso occure, but at least the way the scans are made and walls created it
-                            # does not seem to come up
-                            # if list_of_points_for_lines[line_index][0] == list_of_points_for_lines[second_line_index][1]:
-                            #     self.create_corner(list_of_corners, list_of_points_for_lines[line_index], list_of_points_for_lines[second_line_index], False)
-                            #     break
-
-
-
-                if list_of_corners:
-                    for corner in list_of_corners:
-                        self.print_corner(corner)
-                # temp list of points that make up the whole line?
-
-                # L <- Omega^S union Omega^S_* /* Add the lines to the main list */
-
-
-
-
-
-
+        return list_of_points_for_lines
+                #         self.print_wall(list_of_points_for_lines[line_index])
+                #         print(line_index, len(list_of_points_for_lines))
+                #         for second_line_index in range(line_index, len(list_of_points_for_lines)):
+                #             if list_of_points_for_lines[line_index][1] == list_of_points_for_lines[second_line_index][0]:
+                #                 self.create_corner(list_of_corners, list_of_points_for_lines[line_index], list_of_points_for_lines[second_line_index])
+                #                 break
+                #
+                #             # you could think that the symmetrical case would allso occure, but at least the way the scans are made and walls created it
+                #             # does not seem to come up
+                #             # if list_of_points_for_lines[line_index][0] == list_of_points_for_lines[second_line_index][1]:
+                #             #     self.create_corner(list_of_corners, list_of_points_for_lines[line_index], list_of_points_for_lines[second_line_index], False)
+                #             #     break
+                # # temp list of points that make up the whole line?
+                #
+                # # L <- Omega^S union Omega^S_* /* Add the lines to the main list */
 
     def iterative_end_point_fit(self, list_of_points_for_lines, breakpoints, start_of_region, end_of_region):
         """
