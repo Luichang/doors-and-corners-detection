@@ -158,12 +158,15 @@ class LineExtractionPaper():
         """
         return [start_point, end_point]
 
-    def create_corner(self, corner_list, first_wall, second_wall, inner_corner=True):
+    def create_corner(self, corner_list, first_wall, second_wall):
         """
         This function exists to create a uniform corner type. The input is the 2 touching walls
-        The output is the corner connecting the two walls and the boolean of if the corner is an
-        inside corner (meaning the angle we can see from our current position is < 180, usually 90)
-        or an outside corner (meaning the angle we can see from our current position is > 180, usually 270)
+        The two walls are placed into a list. By "walking" from the first wall to the second wall
+        we can safely assume that to the left of each wall there is a free space where the robot
+        could traverse.
+        With these two walls we determine if the corner is pointing to the robot (inner corner) or
+        away from the robot (outer corner) by creating a triangle with both walls and determining
+        the relative position of the robot to this triangle
 
         Args:
             corner_list (List): the list that will contain all existing corners
@@ -171,13 +174,32 @@ class LineExtractionPaper():
                                list with the Point corrdinates and the flaggs associated
             second_wall (List): the list of the points describing the second wall. Each point is made up of a
                                 list with the Point corrdinates and the flaggs associated
-            (inner_corner (bool)): optional boolean to determine, if the corner point is an inner point
         """
-        #                       checking only for the points, not the flags
-        if first_wall[0][0] in [x[0] for x in second_wall]:
-            corner_list.append([first_wall, second_wall, inner_corner])
-        elif first_wall[1] in second_wall:
-            corner_list.append([second_wall, first_wall, inner_corner])
+
+        wall_one_start = first_wall[0][0]
+        corner = first_wall[1][0]
+        wall_two_end = second_wall[1][0]
+
+        # We want to determine if the corner is an inner or an outer wall.
+        # We do this by taking the two walls that form a corner and combine them
+        # into a triangle.
+        # If we are dealing with an Inner corner the distance from the Robot to the
+        # corner will be less than the distance to the tangent line and the distance
+        # to the tangent line will be greater coming from the robot, than from the corner
+        # In all other cases we are dealing with an outer wall
+
+        inner = False
+
+        distance_to_corner = self.distance(corner, Point())
+        distance_to_imaginary_wall = self.distance_line_to_point(wall_one_start, wall_two_end, Point())
+        corner_to_imaginary_wall = self.distance_line_to_point(wall_one_start, wall_two_end, corner)
+
+        if distance_to_corner < distance_to_imaginary_wall and not distance_to_imaginary_wall < corner_to_imaginary_wall:
+            inner = True
+
+        # print(wall_one_start, corner, wall_two_end, inner, distance_to_corner, distance_to_imaginary_wall, corner_to_imaginary_wall)
+
+        corner_list.append([first_wall, second_wall, inner])
 
     def show_point_in_rviz(self, point, point_color=ColorRGBA(0.0, 1.0, 0.0, 0.8)):
         """ This function takes a point to then place a Marker at that position
@@ -281,7 +303,13 @@ class LineExtractionPaper():
         #         self.show_point_in_rviz(point[0], ColorRGBA(0.0, 1.0, 1.0, 0.8))
         list_of_walls = self.line_extraction(breakpoints)
 
+        list_of_corners = self.find_corners(list_of_walls)
 
+        for wall in list_of_walls:
+            self.print_wall(wall)
+
+        for corner in list_of_corners:
+            self.print_corner(corner)
 
 
     def preprocessing(self, data):
@@ -513,3 +541,28 @@ class LineExtractionPaper():
         else:
             self.iterative_end_point_fit(list_of_points_for_lines, breakpoints, start_of_region, farthest_point)
             self.iterative_end_point_fit(list_of_points_for_lines, breakpoints, farthest_point, end_of_region)
+
+
+    def find_corners(self, list_of_walls):
+        """
+        Takes the list of walls and determines corners and potential corners
+
+        Args:
+            list_of_walls (List): List of Lists, each internal list consists of two points,
+                                  the start point of the wall and it's flags and the end point
+
+        """
+        list_of_corners = []
+
+
+        for first_wall in list_of_walls:
+            for second_wall in list_of_walls:
+                if first_wall == second_wall:
+                    continue
+                if first_wall[1][0] == second_wall[0][0]:
+                # if self.distance(first_wall[1][0], second_wall[0][0]) < 0.02:
+                #     if first_wall[1][0] != second_wall[0][0]:
+                #         # TODO this part should create a smoother corner instead of just overwriting second_wall
+                #         second_wall[0][0] = first_wall[1][0]
+                    self.create_corner(list_of_corners, first_wall, second_wall)
+        return list_of_corners
