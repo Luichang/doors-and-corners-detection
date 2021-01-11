@@ -59,6 +59,8 @@ class LineExtractionPaper():
     def polar_to_cartesian(self, distance, angle):
         """ This function converts polar coordinates to cartesian coordinates
 
+        The sin of the angle is the Y coordinate, the cosin of the angle is the X coordinate
+
         Args:
             distance (float): The distance that the Robot is away from the point that is being viewed
             angle    (float): The angle that the Robot is away from the point that is being viewed
@@ -405,9 +407,19 @@ class LineExtractionPaper():
 
     def line_extraction(self, breakpoints):
         """
+        We take each point with its flags, connect any points within a certain distance to be one wall segment.
+        At any point if a breakpoint or rupture flag is True we interupt the wall segment and start a new one.
+        After all points of the current scan have been assigned a wall segment we break up single wall segments
+        into multiple walls, as it can occure that points along a single corner are close enough to be considered
+        part of the same wall.
+
         Args:
             breakpoints (List): the input list with the additional flag of a breakpoint
                                 [Point (cartesian Point), List (polar Point), rupture, breakpoint]
+
+        Returns:
+            list_of_points_for_lines (List): List of Lists, each internal list consists of two points,
+                                             the start point of the wall and it's flags and the end point
 
         """
 
@@ -415,13 +427,17 @@ class LineExtractionPaper():
         # p = polar discance of the line, a = polar angle, covariance matrix of (p, a)^T,
         # xa = one end of the line, ya = same end only y coordinate,
         # xb = other end x coordinate, yb = other end only y coordinate
-        list_of_points_for_lines = []
+
+
+        list_of_points_for_lines = [] # a line consists of a start point and an endpoint.
+        # In addidion to the X, y, z coordinates the points also still contain breakpoint and rupture flags
         n_iterator = 0
-        while n_iterator < len(breakpoints) - 1:
+        while n_iterator < len(breakpoints) - 1: # we iterate over every point to connect points into continuous lines
             n_start_of_region = n_iterator
             n_iterator = n_start_of_region + 1 # we will not look for the last point of the region
 
             # this loop groups continuous wall segments
+            #              breakpoint                            rupture
             while breakpoints[n_iterator][3] == False and breakpoints[n_iterator][2] == False:
                 n_iterator = n_iterator + 1
                 if n_iterator >= len(breakpoints) - 1:
