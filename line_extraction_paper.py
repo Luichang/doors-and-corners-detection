@@ -73,17 +73,17 @@ class LineExtractionPaper():
         return pointX, pointY
 
     def distance(self, a, b):
-        """ This is a distance function that returns the distance between the 2 given points squared
+        """ This is a distance function that returns the distance between the 2 given points
 
         Args:
             a (Point): a point with x and y coordinates
             b (Point): a point with x and y coordinates
 
         Returns:
-            dist (float): the distance between the 2 given points squared
+            dist (float): the distance between the 2 given points
         """
         dist = (b.x - a.x) ** 2 + (b.y - a.y) ** 2
-        return dist
+        return math.sqrt(dist)
 
     def distance_line_to_point(self, p1, p2, p3):
         """ This function finds the shortest distance between a line defined by two points and another point
