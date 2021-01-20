@@ -14,7 +14,7 @@ from scipy import stats
 class LineExtractionPaper():
     """
     exploring what is being said and done in
-        "Feature-Based Laser Scan Matching For Accurate and High Speed Mobile Robot Localization"
+        "Line Extraction in 2D Range Images for Mobile Robotics"
     """
 
 
