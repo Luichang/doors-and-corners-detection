@@ -106,7 +106,9 @@ class LineExtractionPaper():
 
     def angle_between_points(self, point1, point2):
         """
-        Calculates the angle between 2 points.
+        Calculates the angle of a line relative to the robot at (0,0) where the
+        line is defined by 2 points.
+
 
         Args:
             point1 (Point): first point
@@ -160,7 +162,9 @@ class LineExtractionPaper():
 
     def create_corner(self, corner_list, first_wall, second_wall):
         """
-        This function exists to create a uniform corner type. The input is the 2 touching walls
+        This function exists to create a uniform corner type. The input is:
+        - a list where the corner is to be appended to
+        - the 2 touching walls forming the corner
         The two walls are placed into a list. By "walking" from the first wall to the second wall
         we can safely assume that to the left of each wall there is a free space where the robot
         could traverse.
@@ -251,6 +255,7 @@ class LineExtractionPaper():
     def print_wall(self, wall):
         """
         Function to show the lines of a wall or door
+        TODO make it see "missing doors" as open doors
 
         Args:
             wall (List): list of points defining the boundry of the wall
@@ -266,8 +271,9 @@ class LineExtractionPaper():
 
         Args:
             corner (List): list containing two walls, representing the walls that touch
-                           and form a corner and a boolean representing if the
-                           corner is an inside corner (when True)
+                           and form a corner and an int indicating the corner type.
+                           0 means the corner is an outer corner. 1 means the corner is an
+                           inner corner. 2 means the corner is only a potential corner
         """
         corner_color = ColorRGBA(1, 0, 0, 0.7)
         if corner[2]:
@@ -546,6 +552,7 @@ class LineExtractionPaper():
     def find_corners(self, list_of_walls):
         """
         Takes the list of walls and determines corners and potential corners
+        TODO add an angle check to include less false corners
 
         Args:
             list_of_walls (List): List of Lists, each internal list consists of two points,
