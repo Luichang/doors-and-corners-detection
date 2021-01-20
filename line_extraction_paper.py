@@ -207,6 +207,37 @@ class LineExtractionPaper():
 
         corner_list.append([first_wall, second_wall, corner_type])
 
+    def create_potential_corner(self, corner_list, wall):
+        """
+        This function creates a uniform type of corner. It is similar to create_corner. The difference
+        is we are dealing with only a single wall and thus have to guess if the wall segment that has a
+        breakpoint or a rupturepoint in the current scan, is a corner.
+
+        Args:
+            corner_list (List): the list that will contain all existing corners
+
+            wall (List):        the list of the points describing the first wall. Each point is made up of a
+                                list with the Point corrdinates and the flaggs associated
+        """
+
+        add_potential_corner = True
+        minimum_distance_to_a_corner = 0.2 # 10 centimeters may be a bit small
+
+        for existing_corner in [x[0][1][0] for x in corner_list]:
+            first_distance = self.distance(existing_corner, wall[0][0])
+            second_distance = self.distance(existing_corner, wall[1][0])
+            if first_distance < minimum_distance_to_a_corner or second_distance < minimum_distance_to_a_corner:
+                add_potential_corner = False
+                break
+
+        if add_potential_corner:
+            if wall[1][2] or wall[1][3]:
+                corner_list.append([wall, wall, 2])
+
+            if wall[0][2] or wall[0][3]:
+                corner_list.append([[wall[1], wall[0]], [wall[1], wall[0]], 2])
+
+
     def show_point_in_rviz(self, point, point_color=ColorRGBA(0.0, 1.0, 0.0, 0.8)):
         """ This function takes a point to then place a Marker at that position
         With an optional argument to set the color
@@ -280,6 +311,8 @@ class LineExtractionPaper():
         corner_color = ColorRGBA(1, 0, 0, 0.7)
         if corner[2] == 1:
             corner_color = ColorRGBA(0, 1, 0, 0.7)
+        elif corner[2] == 2:
+            corner_color = ColorRGBA(1, 0, 1, 0.7)
 
         self.show_point_in_rviz(corner[0][1][0], corner_color)
 
@@ -572,9 +605,20 @@ class LineExtractionPaper():
                 if first_wall == second_wall:
                     continue
                 if first_wall[1][0] == second_wall[0][0]:
-                # if self.distance(first_wall[1][0], second_wall[0][0]) < 0.02:
-                #     if first_wall[1][0] != second_wall[0][0]:
-                #         # TODO this part should create a smoother corner instead of just overwriting second_wall
-                #         second_wall[0][0] = first_wall[1][0]
-                    self.create_corner(list_of_corners, first_wall, second_wall)
+                    corner_angle = self.angle_between_lines(first_wall, second_wall)
+                    if 50 < corner_angle < 310:
+                        self.create_corner(list_of_corners, first_wall, second_wall)
+            if first_wall[0][2] or first_wall[0][3] or first_wall[1][2] or first_wall[1][3]:
+                # we are not only wanting normal corners but also potential corners
+
+                # however we probably will need to refine the selection of potential corners
+                # TODO refine the selection of potential corners :)
+                self.create_potential_corner(list_of_corners, first_wall)
+
+
+
+
         return list_of_corners
+
+
+#TODO try and group walls that are part of the "same hallway side"
