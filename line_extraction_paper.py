@@ -464,6 +464,9 @@ class LineExtractionPaper():
         # xa = one end of the line, ya = same end only y coordinate,
         # xb = other end x coordinate, yb = other end only y coordinate
 
+        min_angle = 10 # this is the minimum angle to be counted as a corner. anything less
+        # will be considered as the same wall. this should not be too large, else
+        # there might be some problems with walls being not very accurate
 
         list_of_points_for_lines = [] # a line consists of a start point and an endpoint.
         # In addidion to the X, y, z coordinates the points also still contain breakpoint and rupture flags
@@ -494,7 +497,7 @@ class LineExtractionPaper():
                         if line_index > 0:
                             if list_of_points_for_lines[line_index][0] in list_of_points_for_lines[line_index - 1] or list_of_points_for_lines[line_index][1] in list_of_points_for_lines[line_index - 1]:
                                 angle_of_lines = self.angle_between_lines(list_of_points_for_lines[line_index], list_of_points_for_lines[line_index - 1])
-                                if angle_of_lines < 2:
+                                if angle_of_lines < min_angle or angle_of_lines > 360 - min_angle:
                                     # if we get in here the corner that has been detected is not an actual corner and should be removed
                                     list_of_points_for_lines[line_index - 1][0] = list_of_points_for_lines[line_index][0]
                                     list_of_points_for_lines.pop(line_index)
