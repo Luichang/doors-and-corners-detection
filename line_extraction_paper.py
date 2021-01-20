@@ -192,18 +192,20 @@ class LineExtractionPaper():
         # to the tangent line will be greater coming from the robot, than from the corner
         # In all other cases we are dealing with an outer wall
 
-        inner = False
+        # inner = False
+        corner_type = 0
 
         distance_to_corner = self.distance(corner, Point())
         distance_to_imaginary_wall = self.distance_line_to_point(wall_one_start, wall_two_end, Point())
         corner_to_imaginary_wall = self.distance_line_to_point(wall_one_start, wall_two_end, corner)
 
         if distance_to_corner < distance_to_imaginary_wall and not distance_to_imaginary_wall < corner_to_imaginary_wall:
-            inner = True
+            # inner = True
+            corner_type = 1
 
         # print(wall_one_start, corner, wall_two_end, inner, distance_to_corner, distance_to_imaginary_wall, corner_to_imaginary_wall)
 
-        corner_list.append([first_wall, second_wall, inner])
+        corner_list.append([first_wall, second_wall, corner_type])
 
     def show_point_in_rviz(self, point, point_color=ColorRGBA(0.0, 1.0, 0.0, 0.8)):
         """ This function takes a point to then place a Marker at that position
@@ -276,7 +278,7 @@ class LineExtractionPaper():
                            inner corner. 2 means the corner is only a potential corner
         """
         corner_color = ColorRGBA(1, 0, 0, 0.7)
-        if corner[2]:
+        if corner[2] == 1:
             corner_color = ColorRGBA(0, 1, 0, 0.7)
 
         self.show_point_in_rviz(corner[0][1][0], corner_color)
