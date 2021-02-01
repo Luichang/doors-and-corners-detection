@@ -420,6 +420,8 @@ class LineExtractionPaper():
         self.list_of_doors = self.door_extraction(self.list_of_walls)
         self.list_of_corners = self.find_corners(self.list_of_walls)
 
+        self.find_corridors(self.list_of_walls)
+
         for wall in self.list_of_walls.wall_list:
             self.print_wall(wall)
 
@@ -713,6 +715,56 @@ class LineExtractionPaper():
 
 
         return list_of_corners
+
+    def find_corridors(self, list_of_walls):
+        """
+        The idea is to go through every wall and compare it to every other wall. 2 parallel Walls will be compared, if within a certain distance to each other they will either be of the same corridor side or the other
+        """
+        for first_wall, second_wall in itertools.combinations(list_of_walls.wall_list, 2):
+            if -3 < self.angle_between_lines(first_wall,second_wall) < 3 :
+                # TODO this can be made more efficient by not checking all 4 distance possibilities, but by having a formula that finds the shortest path between two lines
+                minimum_distance = 100.0
+                point_one_one = first_wall.wall_start
+                point_one_two = first_wall.wall_end
+                point_two_one = second_wall.wall_start
+                point_two_two = second_wall.wall_end
+                dist = self.distance(point_one_one,point_two_one)
+                if dist < minimum_distance:
+                    minimum_distance = dist
+                dist = self.distance(point_one_one,point_two_two)
+                if dist < minimum_distance:
+                    minimum_distance = dist
+                dist = self.distance(point_one_two,point_two_one)
+                if dist < minimum_distance:
+                    self.distance(point_one_two,point_two_two)
+                dist = self.distance(point_one_one,point_two_one)
+                if dist < minimum_distance:
+                    minimum_distance = dist
+                if minimum_distance < 1:
+                    self.show_line_in_rviz(first_wall.wall_start, second_wall.wall_end, line_color=ColorRGBA(1, 1, 0, 0.7))
+                elif minimum_distance < 3:
+                    self.show_line_in_rviz(first_wall.wall_start, second_wall.wall_end, line_color=ColorRGBA(0.5, 0.5, 0, 0.7))
+            if 177 < self.angle_between_lines(first_wall,second_wall) < 183:
+                minimum_distance = 100.0
+                point_one_one = first_wall.wall_start
+                point_one_two = first_wall.wall_end
+                point_two_one = second_wall.wall_start
+                point_two_two = second_wall.wall_end
+                dist = self.distance(point_one_one,point_two_one)
+                if dist < minimum_distance:
+                    minimum_distance = dist
+                dist = self.distance(point_one_one,point_two_two)
+                if dist < minimum_distance:
+                    minimum_distance = dist
+                dist = self.distance(point_one_two,point_two_one)
+                if dist < minimum_distance:
+                    self.distance(point_one_two,point_two_two)
+                dist = self.distance(point_one_one,point_two_one)
+                if minimum_distance < 1:
+                    self.show_line_in_rviz(first_wall.wall_start, second_wall.wall_end, line_color=ColorRGBA(1, 1, 0, 0))
+                elif minimum_distance < 3:
+                    self.show_line_in_rviz(first_wall.wall_start, second_wall.wall_end, line_color=ColorRGBA(0.5, 0.5, 0, 0))
+
 
 
 #TODO try and group walls that are part of the "same hallway side"
