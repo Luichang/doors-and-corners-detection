@@ -594,7 +594,12 @@ class LineExtractionPaper():
 
         Args:
             list_of_walls (List): List of Lists, each internal list consists of two points,
-                                  the start point of the wall and it's flags and the end point
+                                  the start point of the wall and its flags and the end point
+                                  with its respective flags
+
+        Returns:
+            list_of_corners (List): List of Lists, each internal list consists of the two walls that
+                                    make up the corner and an int indicating the type of the corner.
 
         """
         list_of_corners = []
