@@ -720,50 +720,71 @@ class LineExtractionPaper():
         """
         The idea is to go through every wall and compare it to every other wall. 2 parallel Walls will be compared, if within a certain distance to each other they will either be of the same corridor side or the other
         """
+        same_sided_walls = []
+        oposite_sided_walls = []
         for first_wall, second_wall in itertools.combinations(list_of_walls.wall_list, 2):
             if -3 < self.angle_between_lines(first_wall,second_wall) < 3 :
                 # TODO this can be made more efficient by not checking all 4 distance possibilities, but by having a formula that finds the shortest path between two lines
-                minimum_distance = 100.0
-                point_one_one = first_wall.wall_start
-                point_one_two = first_wall.wall_end
-                point_two_one = second_wall.wall_start
-                point_two_two = second_wall.wall_end
-                dist = self.distance(point_one_one,point_two_one)
-                if dist < minimum_distance:
-                    minimum_distance = dist
-                dist = self.distance(point_one_one,point_two_two)
-                if dist < minimum_distance:
-                    minimum_distance = dist
-                dist = self.distance(point_one_two,point_two_one)
-                if dist < minimum_distance:
-                    self.distance(point_one_two,point_two_two)
-                dist = self.distance(point_one_one,point_two_one)
-                if dist < minimum_distance:
-                    minimum_distance = dist
-                if minimum_distance < 1:
-                    self.show_line_in_rviz(first_wall.wall_start, second_wall.wall_end, line_color=ColorRGBA(1, 1, 0, 0.7))
-                elif minimum_distance < 3:
-                    self.show_line_in_rviz(first_wall.wall_start, second_wall.wall_end, line_color=ColorRGBA(0.5, 0.5, 0, 0.7))
-            if 177 < self.angle_between_lines(first_wall,second_wall) < 183:
-                minimum_distance = 100.0
-                point_one_one = first_wall.wall_start
-                point_one_two = first_wall.wall_end
-                point_two_one = second_wall.wall_start
-                point_two_two = second_wall.wall_end
-                dist = self.distance(point_one_one,point_two_one)
-                if dist < minimum_distance:
-                    minimum_distance = dist
-                dist = self.distance(point_one_one,point_two_two)
-                if dist < minimum_distance:
-                    minimum_distance = dist
-                dist = self.distance(point_one_two,point_two_one)
-                if dist < minimum_distance:
-                    self.distance(point_one_two,point_two_two)
-                dist = self.distance(point_one_one,point_two_one)
-                if minimum_distance < 1:
-                    self.show_line_in_rviz(first_wall.wall_start, second_wall.wall_end, line_color=ColorRGBA(1, 1, 0, 0))
-                elif minimum_distance < 3:
-                    self.show_line_in_rviz(first_wall.wall_start, second_wall.wall_end, line_color=ColorRGBA(0.5, 0.5, 0, 0))
+                minimum_distance = self.minimum_distance_between_lines(first_wall, second_wall)
+
+
+
+                if minimum_distance < 2: # for starters requiring two walls that belong to the same side of a hallway to be within 2 meters of each other. Might need adjusting
+
+                    # first we need to check, if either of the parallel walls is already a part of a corridor side
+                    create_new_entry = True
+                    for extended_walls in same_sided_walls:
+                        if first_wall in extended_walls:
+                            create_new_entry = False
+                            # appending the second wall to the end of the list, not sure if this is always correct
+                            extended_walls.append(second_wall)
+                            break
+                        if second_wall in extended_walls:
+                            create_new_entry = False
+                            extended_walls.append(first_wall)
+                            break
+                    if create_new_entry:
+                        same_sided_walls.append([first_wall, second_wall])
+                # if minimum_distance < 1:
+                #     self.show_line_in_rviz(first_wall[0][0], second_wall[1][0], line_color=ColorRGBA(1, 1, 0, 0.7))
+                # elif minimum_distance < 3:
+                #     self.show_line_in_rviz(first_wall[0][0], second_wall[1][0], line_color=ColorRGBA(0.5, 0.5, 0, 0.7))
+            # if 177 < self.angle_between_lines(first_wall,second_wall) < 183:
+            #     minimum_distance = 100.0
+            #     for point_one in first_wall:
+            #         for point_two in second_wall:
+            #             dist = self.distance(point_one[0],point_two[0])
+            #             if dist < minimum_distance:
+            #                 minimum_distance = dist
+            #     if minimum_distance < 1:
+            #         self.show_line_in_rviz(first_wall[0][0], second_wall[1][0], line_color=ColorRGBA(1, 1, 0, 0))
+            #     elif minimum_distance < 3:
+            #         self.show_line_in_rviz(first_wall[0][0], second_wall[1][0], line_color=ColorRGBA(0.5, 0.5, 0, 0))
+        for first_side, second_side in itertools.combinations(same_sided_walls, 2):
+            # first we check if the two sides are at a 180 degrees angle to each other
+            if 177 < self.angle_between_lines(first_side[0],second_side[0]) < 183:
+                # if that is the case we check if any wall combination is within 3 meters:
+                wall_segments_within_distance = [(x, y) for x in first_side for y in second_side if self.minimum_distance_between_lines(x,y) < 2]
+
+                if len(wall_segments_within_distance) > 1:
+                    walls_side_one = wall_segments_within_distance[0]
+                    walls_side_two = wall_segments_within_distance[1]
+
+                    wall_one_side_one = walls_side_one[0]
+                    wall_last_side_one = walls_side_one[-1]
+                    wall_one_side_two = walls_side_two[0]
+                    wall_last_side_two = walls_side_two[-1]
+
+                    wall_one_side_one_start = wall_one_side_one.wall_start
+                    wall_one_side_one_end = wall_one_side_one.wall_end
+                    wall_last_side_one_start = wall_last_side_one.wall_start
+                    wall_last_side_one_end = wall_last_side_one.wall_end
+                    wall_one_side_two_start = wall_one_side_two.wall_start
+                    wall_one_side_two_end = wall_one_side_two.wall_end
+                    wall_last_side_two_start = wall_last_side_two.wall_start
+                    wall_last_side_two_end = wall_last_side_two.wall_end
+                    #print(len(wall_segments_within_distance),len(walls_side_one), len(wall_one_side_one), wall_one_side_one_point_a)
+                    self.show_line_in_rviz(wall_one_side_one_start, wall_last_side_two_end, line_color=ColorRGBA(1, 1, 0, 0.5))
 
 
 
