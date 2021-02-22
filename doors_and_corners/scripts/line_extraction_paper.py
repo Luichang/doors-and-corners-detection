@@ -215,7 +215,7 @@ class LineExtractionPaper():
         new_corner.second_wall = second_wall
         new_corner.corner_type = corner_type
 
-        corner_list.append(new_corner)
+        corner_list.corner_list.append(new_corner)
 
     def create_potential_corner(self, corner_list, wall):
         """
@@ -381,7 +381,7 @@ class LineExtractionPaper():
         for corner in list_of_corners.corner_list:
             self.print_corner(corner)
 
-        #self.corner_pub.publish(list_of_corners)
+        self.corner_pub.publish(list_of_corners)
 
 
 
@@ -679,3 +679,5 @@ class LineExtractionPaper():
 
 
 #TODO try and group walls that are part of the "same hallway side"
+
+LineExtractionPaper()
