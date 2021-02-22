@@ -1,0 +1,6 @@
+geometry_msgs/Point wall_start
+geometry_msgs/Point wall_end
+bool wall_start_rupture
+bool wall_start_break
+bool wall_end_rupture
+bool wall_end_break
