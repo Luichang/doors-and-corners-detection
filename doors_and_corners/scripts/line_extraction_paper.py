@@ -4,6 +4,7 @@ from sensor_msgs.msg import LaserScan
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Quaternion, Pose, Point, Vector3
 from std_msgs.msg import Header, ColorRGBA
+from doors_and_corners.msg import Wall, Corner, CornerList
 import math, numpy as np
 from scipy import stats
 
@@ -50,6 +51,7 @@ class LineExtractionPaper():
         self.line_pub = rospy.Publisher('visualization_marker', Marker, queue_size=10)
         rospy.Subscriber('scan_filtered', LaserScan, self.callback)
 
+        self.corner_pub = rospy.Publisher('corner_list', CornerList, queue_size=10)
 
 
         rospy.spin()
@@ -156,7 +158,14 @@ class LineExtractionPaper():
             wall (List): list containing the first and last point of a wall, indicating the
                          straight line segment created by the wall
         """
-        return [start_point, end_point]
+        new_wall = Wall()
+        new_wall.wall_start = start_point[0]
+        new_wall.wall_end = end_point[0]
+        new_wall.wall_start_rupture = start_point[2]
+        new_wall.wall_start_break = start_point[3]
+        new_wall.wall_end_rupture = end_point[2]
+        new_wall.wall_end_break = end_point[3]
+        return new_wall
 
     def create_corner(self, corner_list, first_wall, second_wall):
         """
@@ -178,9 +187,9 @@ class LineExtractionPaper():
                                 list with the Point corrdinates and the flaggs associated
         """
 
-        wall_one_start = first_wall[0][0]
-        corner = first_wall[1][0]
-        wall_two_end = second_wall[1][0]
+        wall_one_start = first_wall.wall_start
+        corner = first_wall.wall_end
+        wall_two_end = second_wall.wall_end
 
         # We want to determine if the corner is an inner or an outer wall.
         # We do this by taking the two walls that form a corner and combine them
@@ -201,9 +210,12 @@ class LineExtractionPaper():
             # inner = True
             corner_type = 1
 
-        # print(wall_one_start, corner, wall_two_end, inner, distance_to_corner, distance_to_imaginary_wall, corner_to_imaginary_wall)
+        new_corner = Corner()
+        new_corner.first_wall = first_wall
+        new_corner.second_wall = second_wall
+        new_corner.corner_type = corner_type
 
-        corner_list.append([first_wall, second_wall, corner_type])
+        corner_list.append(new_corner)
 
     def create_potential_corner(self, corner_list, wall):
         """
@@ -220,20 +232,35 @@ class LineExtractionPaper():
 
         add_potential_corner = True
         minimum_distance_to_a_corner = 0.2 # 10 centimeters may be a bit small
-
-        for existing_corner in [x[0][1][0] for x in corner_list]:
-            first_distance = self.distance(existing_corner, wall[0][0])
-            second_distance = self.distance(existing_corner, wall[1][0])
+        for existing_corner in [x.first_wall.wall_end for x in corner_list.corner_list]:
+            first_distance = self.distance(existing_corner, wall.wall_start)
+            second_distance = self.distance(existing_corner, wall.wall_end)
             if first_distance < minimum_distance_to_a_corner or second_distance < minimum_distance_to_a_corner:
                 add_potential_corner = False
                 break
 
         if add_potential_corner:
-            if wall[1][2] or wall[1][3]:
-                corner_list.append([wall, wall, 2])
+            if wall.wall_end_rupture or wall.wall_end_break:
+                new_corner = Corner()
+                new_corner.first_wall = wall
+                new_corner.second_wall = wall
+                new_corner.corner_type = 2
+                corner_list.corner_list.append(new_corner)
 
-            if wall[0][2] or wall[0][3]:
-                corner_list.append([[wall[1], wall[0]], [wall[1], wall[0]], 2])
+            if wall.wall_start_rupture or wall.wall_start_break:
+                tmp_wall = Wall()
+                tmp_wall.wall_start = wall.wall_end
+                tmp_wall.wall_end = wall.wall_start
+                tmp_wall.wall_start_rupture = wall.wall_end_rupture
+                tmp_wall.wall_start_break = wall.wall_end_break
+                tmp_wall.wall_end_rupture = wall.wall_start_rupture
+                tmp_wall.wall_end_break = wall.wall_start_break
+
+                new_corner = Corner()
+                new_corner.first_wall = tmp_wall
+                new_corner.second_wall = tmp_wall
+                new_corner.corner_type = 2
+                corner_list.corner_list.append(new_corner)
 
 
     def show_point_in_rviz(self, point, point_color=ColorRGBA(0.0, 1.0, 0.0, 0.8)):
@@ -292,9 +319,9 @@ class LineExtractionPaper():
             wall (List): list of points defining the boundry of the wall
         """
         line_color = ColorRGBA(1, 0, 0, 0.7)
-        if self.distance(wall[0][0], wall[1][0]) > 0.5 and self.distance(wall[0][0], wall[1][0]) < 1:
+        if self.distance(wall.wall_start, wall.wall_end) > 0.5 and self.distance(wall.wall_start, wall.wall_end) < 1:
             line_color = ColorRGBA(0, 1, 0, 0.7)
-        self.show_line_in_rviz(wall[0][0], wall[1][0], line_color)
+        self.show_line_in_rviz(wall.wall_start, wall.wall_end, line_color)
 
     def print_corner(self, corner):
         """
@@ -307,12 +334,12 @@ class LineExtractionPaper():
                            inner corner. 2 means the corner is only a potential corner
         """
         corner_color = ColorRGBA(1, 0, 0, 0.7)
-        if corner[2] == 1:
+        if corner.corner_type == 1:
             corner_color = ColorRGBA(0, 1, 0, 0.7)
-        elif corner[2] == 2:
+        elif corner.corner_type == 2:
             corner_color = ColorRGBA(1, 0, 1, 0.7)
 
-        self.show_point_in_rviz(corner[0][1][0], corner_color)
+        self.show_point_in_rviz(corner.first_wall.wall_end, corner_color)
 
     def callback(self, data):
         """ Essentially the main function of the program, this will call any functions
@@ -351,8 +378,10 @@ class LineExtractionPaper():
         for wall in list_of_walls:
             self.print_wall(wall)
 
-        for corner in list_of_corners:
+        for corner in list_of_corners.corner_list:
             self.print_corner(corner)
+
+        #self.corner_pub.publish(list_of_corners)
 
 
 
@@ -531,13 +560,30 @@ class LineExtractionPaper():
                 if list_of_points_for_lines:
                     for line_index in reversed(range(len(list_of_points_for_lines))):
                         if line_index > 0:
-                            if list_of_points_for_lines[line_index][0] in list_of_points_for_lines[line_index - 1] or list_of_points_for_lines[line_index][1] in list_of_points_for_lines[line_index - 1]:
-                                angle_of_lines = self.angle_between_lines(list_of_points_for_lines[line_index], list_of_points_for_lines[line_index - 1])
-                                if angle_of_lines < min_angle or angle_of_lines > 360 - min_angle:
-                                    # if we get in here the corner that has been detected is not an actual corner and should be removed
-                                    list_of_points_for_lines[line_index - 1][0] = list_of_points_for_lines[line_index][0]
-                                    list_of_points_for_lines.pop(line_index)
-                                    continue
+                            # check if the first or second point is contained in the previous Wall
+                            if list_of_points_for_lines[line_index].wall_start == list_of_points_for_lines[line_index - 1].wall_end:
+                                list_of_points_for_lines[line_index - 1].wall_end = list_of_points_for_lines[line_index].wall_end
+                                list_of_points_for_lines[line_index - 1].wall_end_rupture = list_of_points_for_lines[line_index].wall_end_rupture
+                                list_of_points_for_lines[line_index - 1].wall_end_break = list_of_points_for_lines[line_index].wall_end_break
+                                list_of_points_for_lines.pop(line_index)
+                                continue
+                            if list_of_points_for_lines[line_index].wall_end == list_of_points_for_lines[line_index - 1].wall_start:
+                                # if we get in here the corner that has been detected is not an actual corner and should be removed
+                                list_of_points_for_lines[line_index - 1].wall_start = list_of_points_for_lines[line_index].wall_start
+                                list_of_points_for_lines[line_index - 1].wall_start_rupture = list_of_points_for_lines[line_index].wall_start_rupture
+                                list_of_points_for_lines[line_index - 1].wall_start_break = list_of_points_for_lines[line_index].wall_start_break
+                                list_of_points_for_lines.pop(line_index)
+                                continue
+                            # if (list_of_points_for_lines[line_index].wall_start == list_of_points_for_lines[line_index - 1].wall_start
+                            # or list_of_points_for_lines[line_index].wall_end == list_of_points_for_lines[line_index - 1].wall_end):
+                            #     angle_of_lines = self.angle_between_lines(list_of_points_for_lines[line_index], list_of_points_for_lines[line_index - 1])
+                            #     if angle_of_lines < min_angle or angle_of_lines > 360 - min_angle:
+                            #         # if we get in here the corner that has been detected is not an actual corner and should be removed
+                            #         list_of_points_for_lines[line_index - 1].wall_start = list_of_points_for_lines[line_index].wall_start
+                            #         list_of_points_for_lines[line_index - 1].wall_start_rupture = list_of_points_for_lines[line_index].wall_start_rupture
+                            #         list_of_points_for_lines[line_index - 1].wall_start_break = list_of_points_for_lines[line_index].wall_start_break
+                            #         list_of_points_for_lines.pop(line_index)
+                            #         continue
 
         return list_of_points_for_lines
                 #         self.print_wall(list_of_points_for_lines[line_index])
@@ -608,18 +654,18 @@ class LineExtractionPaper():
                                     make up the corner and an int indicating the type of the corner.
 
         """
-        list_of_corners = []
+        list_of_corners = CornerList()
 
 
         for first_wall in list_of_walls:
             for second_wall in list_of_walls:
                 if first_wall == second_wall:
                     continue
-                if first_wall[1][0] == second_wall[0][0]:
+                if first_wall.wall_end == second_wall.wall_start:
                     corner_angle = self.angle_between_lines(first_wall, second_wall)
                     if 50 < corner_angle < 310:
                         self.create_corner(list_of_corners, first_wall, second_wall)
-            if first_wall[0][2] or first_wall[0][3] or first_wall[1][2] or first_wall[1][3]:
+            if first_wall.wall_start_rupture or first_wall.wall_start_break or first_wall.wall_end_rupture or first_wall.wall_end_break:
                 # we are not only wanting normal corners but also potential corners
 
                 # however we probably will need to refine the selection of potential corners
