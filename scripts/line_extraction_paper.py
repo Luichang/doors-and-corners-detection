@@ -1,11 +1,10 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 import rospy
 from sensor_msgs.msg import LaserScan
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Quaternion, Pose, Point, Vector3
 from std_msgs.msg import Header, ColorRGBA
 import math, numpy as np
-import tf2_ros, tf
 from scipy import stats
 
 
@@ -48,8 +47,6 @@ class LineExtractionPaper():
 
         # initializing rospy publishers and subscribers
         rospy.init_node('clusters', anonymous=True)
-        self.tf_buffer = tf2_ros.Buffer()
-        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         self.line_pub = rospy.Publisher('visualization_marker', Marker, queue_size=10)
         rospy.Subscriber('scan_filtered', LaserScan, self.callback)
 
@@ -357,8 +354,6 @@ class LineExtractionPaper():
         for corner in list_of_corners:
             self.print_corner(corner)
 
-        tmp_corner_list = [p.first_wall.wall_end for p in list_of_corners]
-        print("[" + ', '.join(map(str, [[p[0].x, p[0].y, p[0].z] for p in tmp_corner_list])) + "]")
 
 
     def preprocessing(self, data):
