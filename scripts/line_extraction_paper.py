@@ -34,6 +34,7 @@ class LineExtractionPaper():
         # marker constants
         self.base_marker_type = Marker.LINE_STRIP
         self.base_marker_lifetime = rospy.Duration(0.3)
+        # self.base_marker_lifetime = rospy.Duration(10)
         self.base_marker_header_frame_id = 'cloud'
         self.base_marker_action = 0
         self.base_marker_scale_x = 0.01
@@ -323,6 +324,10 @@ class LineExtractionPaper():
             data (LaserScan): the data that the LaserScan returns
         """
 
+        # display where the scan is coming from
+        self.show_point_in_rviz(Point(), ColorRGBA(0, 0, 1, 0.8))
+
+
         if not self.ANGLES:
             self.ANGLE_INCREMENT = data.angle_increment
             self.ANGLES = [x for x in np.arange(data.angle_min, data.angle_max, self.ANGLE_INCREMENT)]
@@ -351,6 +356,9 @@ class LineExtractionPaper():
 
         for corner in list_of_corners:
             self.print_corner(corner)
+
+        tmp_corner_list = [p.first_wall.wall_end for p in list_of_corners]
+        print("[" + ', '.join(map(str, [[p[0].x, p[0].y, p[0].z] for p in tmp_corner_list])) + "]")
 
 
     def preprocessing(self, data):
@@ -568,17 +576,20 @@ class LineExtractionPaper():
             end_of_region (int):             index of point indicating the end of a wall segment to be checked for corners
 
         """
-        minimum_distance_to_be_a_corner = 0.03 # meter, the value set is a guess and may need adjusting
+        minimum_distance_to_be_a_corner = 0.06 # meter, the value set is a guess and may need adjusting
         N_min = 3 # this probably should be turned into a variable part of self
         if (end_of_region - start_of_region + 1) <= N_min:
             return None
         max_distance = 0
         farthest_point = -1
+        # number_of_potential_corners = 0 # an attempt to ignore single points that disrupt clearly straight lines
         for potential_corner in range(start_of_region + 1, end_of_region):
             distance_to_line = self.distance_line_to_point(breakpoints[start_of_region][0], breakpoints[end_of_region][0], breakpoints[potential_corner][0])
-            if distance_to_line > minimum_distance_to_be_a_corner and distance_to_line > max_distance:
-                max_distance = distance_to_line
-                farthest_point = potential_corner
+            if distance_to_line > minimum_distance_to_be_a_corner:
+                # number_of_potential_corners += 1
+                if distance_to_line > max_distance:
+                    max_distance = distance_to_line
+                    farthest_point = potential_corner
 
         if farthest_point == -1: # or number_of_potential_corners < 2:
             list_of_points_for_lines.append(self.create_wall(breakpoints[start_of_region], breakpoints[end_of_region]))
