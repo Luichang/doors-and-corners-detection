@@ -139,8 +139,8 @@ class LineExtractionPaper():
         Returns:
             angle_of_lines (float): angle between the two lines in degrees
         """
-        angle_line1 = self.angle_between_points(line1[0][0], line1[1][0])
-        angle_line2 = self.angle_between_points(line2[0][0], line2[1][0])
+        angle_line1 = self.angle_between_points(line1.wall_start, line1.wall_end)
+        angle_line2 = self.angle_between_points(line2.wall_start, line2.wall_end)
         angle_of_lines = abs(angle_line1 - angle_line2)
         return angle_of_lines
 
@@ -562,18 +562,22 @@ class LineExtractionPaper():
                         if line_index > 0:
                             # check if the first or second point is contained in the previous Wall
                             if list_of_points_for_lines[line_index].wall_start == list_of_points_for_lines[line_index - 1].wall_end:
-                                list_of_points_for_lines[line_index - 1].wall_end = list_of_points_for_lines[line_index].wall_end
-                                list_of_points_for_lines[line_index - 1].wall_end_rupture = list_of_points_for_lines[line_index].wall_end_rupture
-                                list_of_points_for_lines[line_index - 1].wall_end_break = list_of_points_for_lines[line_index].wall_end_break
-                                list_of_points_for_lines.pop(line_index)
-                                continue
+                                angle_of_lines = self.angle_between_lines(list_of_points_for_lines[line_index], list_of_points_for_lines[line_index - 1])
+                                if angle_of_lines < min_angle or angle_of_lines > 360 - min_angle:
+                                    list_of_points_for_lines[line_index - 1].wall_end = list_of_points_for_lines[line_index].wall_end
+                                    list_of_points_for_lines[line_index - 1].wall_end_rupture = list_of_points_for_lines[line_index].wall_end_rupture
+                                    list_of_points_for_lines[line_index - 1].wall_end_break = list_of_points_for_lines[line_index].wall_end_break
+                                    list_of_points_for_lines.pop(line_index)
+                                    continue
                             if list_of_points_for_lines[line_index].wall_end == list_of_points_for_lines[line_index - 1].wall_start:
                                 # if we get in here the corner that has been detected is not an actual corner and should be removed
-                                list_of_points_for_lines[line_index - 1].wall_start = list_of_points_for_lines[line_index].wall_start
-                                list_of_points_for_lines[line_index - 1].wall_start_rupture = list_of_points_for_lines[line_index].wall_start_rupture
-                                list_of_points_for_lines[line_index - 1].wall_start_break = list_of_points_for_lines[line_index].wall_start_break
-                                list_of_points_for_lines.pop(line_index)
-                                continue
+                                angle_of_lines = self.angle_between_lines(list_of_points_for_lines[line_index], list_of_points_for_lines[line_index - 1])
+                                if angle_of_lines < min_angle or angle_of_lines > 360 - min_angle:
+                                    list_of_points_for_lines[line_index - 1].wall_start = list_of_points_for_lines[line_index].wall_start
+                                    list_of_points_for_lines[line_index - 1].wall_start_rupture = list_of_points_for_lines[line_index].wall_start_rupture
+                                    list_of_points_for_lines[line_index - 1].wall_start_break = list_of_points_for_lines[line_index].wall_start_break
+                                    list_of_points_for_lines.pop(line_index)
+                                    continue
                             # if (list_of_points_for_lines[line_index].wall_start == list_of_points_for_lines[line_index - 1].wall_start
                             # or list_of_points_for_lines[line_index].wall_end == list_of_points_for_lines[line_index - 1].wall_end):
                             #     angle_of_lines = self.angle_between_lines(list_of_points_for_lines[line_index], list_of_points_for_lines[line_index - 1])
