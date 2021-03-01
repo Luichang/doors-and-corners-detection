@@ -48,7 +48,7 @@ class LineExtractionPaper():
 
         # initializing rospy publishers and subscribers
         rospy.init_node('clusters', anonymous=True)
-        self.line_pub = rospy.Publisher('visualization_marker', Marker, queue_size=10)
+        self.line_pub = rospy.Publisher('visualization_marker', Marker, queue_size=50)
         rospy.Subscriber('scan_filtered', LaserScan, self.callback)
 
         self.corner_pub = rospy.Publisher('corner_list', CornerList, queue_size=10)
