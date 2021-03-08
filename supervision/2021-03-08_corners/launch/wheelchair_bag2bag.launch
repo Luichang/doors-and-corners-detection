@@ -1,0 +1,15 @@
+<launch>
+ 
+  <node pkg="rosbag" type="play" name="player" output="screen" args="-r 0.3 $(find doors_and_corners)/rosbags/2020-11-19-16-22-13.bag"/>
+
+  <node pkg="laser_filters" type="scan_to_scan_filter_chain" output="screen" name="laser_filter">
+    <rosparam command="load" file="$(find doors_and_corners)/config/my_laser_config.yaml" />
+  </node>
+
+
+  <node pkg="doors_and_corners" type="line_extraction_paper.py" name="line_extraction" />
+
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find doors_and_corners)/rviz/wheelchairbag.rviz" />
+  
+  <node name="record" pkg="rosbag" type="record"  args="/corner_list /visualization_marker -o $(find doors_and_corners)/rosbags/corners.bag"/>
+</launch>
