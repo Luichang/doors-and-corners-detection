@@ -317,6 +317,23 @@ class LineExtractionPaper():
 
         return minimum_distance
 
+    def line_intersection(self, wall1, wall2):
+        xdiff = (wall1.wall_start.x - wall1.wall_end.x, wall2.wall_start.x - wall2.wall_end.x)
+        ydiff = (wall1.wall_start.y - wall1.wall_end.y, wall2.wall_start.y - wall2.wall_end.y)
+
+        def det(a, b):
+            return a[0] * b[1] - a[1] * b[0]
+
+        div = det(xdiff, ydiff)
+        if div == 0:
+           return None, None # returning None as these walls do not intersect
+
+        d = (det([wall1.wall_start.x, wall1.wall_start.y],[wall1.wall_end.x, wall1.wall_end.y]), det([wall2.wall_start.x, wall2.wall_start.y],[wall2.wall_end.x, wall2.wall_end.y]))
+        x = det(d, xdiff) / div
+        y = det(d, ydiff) / div
+        return x, y
+
+
     def show_point_in_rviz(self, point, point_color=ColorRGBA(0.0, 1.0, 0.0, 0.8)):
         """ This function takes a point to then place a Marker at that position
         With an optional argument to set the color
@@ -422,6 +439,8 @@ class LineExtractionPaper():
         self.list_of_corners = self.find_corners(self.list_of_walls)
 
         self.find_corridors(self.list_of_walls)
+
+        self.find_corridor_entrances(self.list_of_corners)
 
         for wall in self.list_of_walls.wall_list:
             self.print_wall(wall)
@@ -716,6 +735,54 @@ class LineExtractionPaper():
 
 
         return list_of_corners
+
+    def find_corridor_entrances(self, list_of_corners):
+        """
+        Trying to find the entrances of corridors here.
+        """
+        list_of_lines_perpendicular = []
+        for corner in list_of_corners.corner_list:
+            angle_wall_one = self.angle_between_points(corner.first_wall.wall_start, corner.first_wall.wall_end)
+            # OK so my idea right now is that I add 90 degrees 3 times to this angle, I go out by some distance
+            # figure out what those coordinates would be and convert them to be not relative to the corner but
+            # relative to the robot
+            for i in [1, 2, 3]:
+                tmp_angle = -(angle_wall_one + (i * 90))
+                tempx, tempy = self.polar_to_cartesian(3, math.radians(tmp_angle))
+                probing_point = Point(corner.first_wall.wall_end.x + tempx, corner.first_wall.wall_end.y + tempy, self.Z_OFFSET)
+                probing_wall = self.create_wall([corner.first_wall.wall_end, 0, False, False], [probing_point, 0, False, False])
+                list_of_lines_perpendicular.append([probing_wall, corner.first_wall])
+
+        if corner.corner_type != 2:
+            for corner in list_of_corners.corner_list:
+                angle_wall_two = self.angle_between_points(corner.second_wall.wall_start, corner.second_wall.wall_end)
+                # OK so my idea right now is that I add 90 degrees 3 times to this angle, I go out by some distance
+                # figure out what those coordinates would be and convert them to be not relative to the corner but
+                # relative to the robot
+                for i in [1, 2, 3]:
+                    tmp_angle = -(angle_wall_one + (i * 90))
+                    tempx, tempy = self.polar_to_cartesian(2.5, math.radians(tmp_angle))
+                    probing_point = Point(corner.second_wall.wall_end.x + tempx, corner.second_wall.wall_end.y + tempy, self.Z_OFFSET)
+                    probing_wall = self.create_wall([corner.second_wall.wall_end, 0, False, False], [probing_point, 0, False, False])
+                    list_of_lines_perpendicular.append([probing_wall, corner.second_wall])
+
+
+
+        for line1, line2 in itertools.combinations(list_of_lines_perpendicular, 2):
+            if line1[0].wall_end == line2[0].wall_end:
+                continue
+            intersect_x, intersect_y = self.line_intersection(line1[0], line2[0])
+            if intersect_x is not None:
+                intersect_pt = Point(intersect_x, intersect_y, self.Z_OFFSET)
+                dist_to_origin = self.distance(intersect_pt, Point(0,0,self.Z_OFFSET))
+                if dist_to_origin < 3:
+                    if ((dist_to_origin - 0.1) < self.distance_line_to_point(line1[1].wall_start, line1[1].wall_end, Point(0,0,self.Z_OFFSET))
+                    and (dist_to_origin - 0.1) < self.distance_line_to_point(line2[1].wall_start, line2[1].wall_end, Point(0,0,self.Z_OFFSET))):
+                        self.show_point_in_rviz(intersect_pt, ColorRGBA(1.0, 1.0, 0.0, 0.8))
+
+
+
+
 
     def find_corridors(self, list_of_walls):
         """
