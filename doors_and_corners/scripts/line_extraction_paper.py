@@ -51,7 +51,7 @@ class LineExtractionPaper():
 
         # initializing rospy publishers and subscribers
         rospy.init_node('clusters', anonymous=True)
-        self.line_pub = rospy.Publisher('visualization_marker', Marker, queue_size=50)
+        self.line_pub = rospy.Publisher('visualization_marker', Marker, queue_size=200)
         rospy.Subscriber('scan_filtered', LaserScan, self.callback)
 
         self.corner_pub = rospy.Publisher('corner_list', CornerList, queue_size=10)
@@ -229,8 +229,8 @@ class LineExtractionPaper():
         # inner = False
         corner_type = 0
 
-        distance_to_corner = self.distance(corner, Point())
-        distance_to_imaginary_wall = self.distance_line_to_point(wall_one_start, wall_two_end, Point())
+        distance_to_corner = self.distance(corner, Point(0,0,self.Z_OFFSET))
+        distance_to_imaginary_wall = self.distance_line_to_point(wall_one_start, wall_two_end, Point(0,0,self.Z_OFFSET))
         corner_to_imaginary_wall = self.distance_line_to_point(wall_one_start, wall_two_end, corner)
 
         if distance_to_corner < distance_to_imaginary_wall and not distance_to_imaginary_wall < corner_to_imaginary_wall:
