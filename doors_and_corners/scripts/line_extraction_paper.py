@@ -736,36 +736,48 @@ class LineExtractionPaper():
 
         return list_of_corners
 
+    def create_perpendicular_walls(self, list_of_lines_perpendicular, corner):
+        from_wall = corner.first_wall
+        probing_wall_start = from_wall.wall_start
+        angle_wall = self.angle_between_points(probing_wall_start, corner.first_wall.wall_end)
+
+        # OK so my idea right now is that I add 90 degrees 3 times to this angle, I go out by some distance
+        # figure out what those coordinates would be and convert them to be not relative to the corner but
+        # relative to the robot
+        max_counter = 0
+        while max_counter < 3:
+            for i in [1, 2, 3]:
+                tmp_angle = -(angle_wall + (i * 90))
+                tempx, tempy = self.polar_to_cartesian(3, math.radians(tmp_angle))
+                probing_point = Point(probing_wall_start.x + tempx, probing_wall_start.y + tempy, self.Z_OFFSET)
+                probing_wall = self.create_wall([probing_wall_start, 0, False, False], [probing_point, 0, False, False])
+                self.print_wall(probing_wall)
+                list_of_lines_perpendicular.append([probing_wall, from_wall])
+
+            if max_counter == 0:
+                from_wall = corner.second_wall
+                probing_wall_start = from_wall.wall_end
+                angle_wall = self.angle_between_points(probing_wall_start, corner.first_wall.wall_end)
+                if corner.corner_type == 1 or corner.corner_type == 2:
+                    max_counter += 1
+                max_counter += 1
+            else:
+                from_wall = corner.first_wall
+                probing_wall_start = from_wall.wall_end
+                angle_wall = -angle_wall
+                max_counter += 1
+
+
+
+
+
     def find_corridor_entrances(self, list_of_corners):
         """
         Trying to find the entrances of corridors here.
         """
         list_of_lines_perpendicular = []
         for corner in list_of_corners.corner_list:
-            angle_wall_one = self.angle_between_points(corner.first_wall.wall_start, corner.first_wall.wall_end)
-            # OK so my idea right now is that I add 90 degrees 3 times to this angle, I go out by some distance
-            # figure out what those coordinates would be and convert them to be not relative to the corner but
-            # relative to the robot
-            for i in [1, 2, 3]:
-                tmp_angle = -(angle_wall_one + (i * 90))
-                tempx, tempy = self.polar_to_cartesian(3, math.radians(tmp_angle))
-                probing_point = Point(corner.first_wall.wall_end.x + tempx, corner.first_wall.wall_end.y + tempy, self.Z_OFFSET)
-                probing_wall = self.create_wall([corner.first_wall.wall_end, 0, False, False], [probing_point, 0, False, False])
-                list_of_lines_perpendicular.append([probing_wall, corner.first_wall])
-
-        if corner.corner_type != 2:
-            for corner in list_of_corners.corner_list:
-                angle_wall_two = self.angle_between_points(corner.second_wall.wall_start, corner.second_wall.wall_end)
-                # OK so my idea right now is that I add 90 degrees 3 times to this angle, I go out by some distance
-                # figure out what those coordinates would be and convert them to be not relative to the corner but
-                # relative to the robot
-                for i in [1, 2, 3]:
-                    tmp_angle = -(angle_wall_one + (i * 90))
-                    tempx, tempy = self.polar_to_cartesian(2.5, math.radians(tmp_angle))
-                    probing_point = Point(corner.second_wall.wall_end.x + tempx, corner.second_wall.wall_end.y + tempy, self.Z_OFFSET)
-                    probing_wall = self.create_wall([corner.second_wall.wall_end, 0, False, False], [probing_point, 0, False, False])
-                    list_of_lines_perpendicular.append([probing_wall, corner.second_wall])
-
+            self.create_perpendicular_walls(list_of_lines_perpendicular, corner)
 
 
         for line1, line2 in itertools.combinations(list_of_lines_perpendicular, 2):
