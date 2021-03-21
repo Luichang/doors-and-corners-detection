@@ -5,6 +5,7 @@ from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Quaternion, Pose, Point, Vector3
 from std_msgs.msg import Header, ColorRGBA
 from doors_and_corners.msg import Wall, Corner, CornerList
+import itertools
 import math, numpy as np
 from scipy import stats
 
@@ -263,6 +264,32 @@ class LineExtractionPaper():
                 corner_list.corner_list.append(new_corner)
 
 
+    def minimum_distance_between_lines(self, first_wall, second_wall):
+        minimum_distance = 100.0
+        point_one_one = first_wall.wall_start
+        point_one_two = first_wall.wall_end
+
+        point_two_one = second_wall.wall_start
+        point_two_two = second_wall.wall_end
+
+        dist = self.distance(first_wall.wall_start, second_wall.wall_start)
+        if dist < minimum_distance:
+            minimum_distance = dist
+
+        dist = self.distance(first_wall.wall_start, second_wall.wall_end)
+        if dist < minimum_distance:
+            minimum_distance = dist
+
+        dist = self.distance(first_wall.wall_end, second_wall.wall_start)
+        if dist < minimum_distance:
+            minimum_distance = dist
+
+        dist = self.distance(first_wall.wall_end, second_wall.wall_end)
+        if dist < minimum_distance:
+            minimum_distance = dist
+
+        return minimum_distance
+
     def show_point_in_rviz(self, point, point_color=ColorRGBA(0.0, 1.0, 0.0, 0.8)):
         """ This function takes a point to then place a Marker at that position
         With an optional argument to set the color
@@ -319,9 +346,11 @@ class LineExtractionPaper():
             wall (List): list of points defining the boundry of the wall
         """
         line_color = ColorRGBA(1, 0, 0, 0.7)
-        if self.distance(wall.wall_start, wall.wall_end) > 0.5 and self.distance(wall.wall_start, wall.wall_end) < 1:
-            line_color = ColorRGBA(0, 1, 0, 0.7)
         self.show_line_in_rviz(wall.wall_start, wall.wall_end, line_color)
+
+    def print_door(self, door):
+        line_color = ColorRGBA(0, 1, 0, 0.7)
+        self.show_line_in_rviz(door.wall_start, door.wall_end, line_color)
 
     def print_corner(self, corner):
         """
@@ -373,10 +402,15 @@ class LineExtractionPaper():
         #         self.show_point_in_rviz(point[0], ColorRGBA(0.0, 1.0, 1.0, 0.8))
         list_of_walls = self.line_extraction(breakpoints)
 
+        list_of_doors = self.door_extraction(list_of_walls)
+
         list_of_corners = self.find_corners(list_of_walls)
 
         for wall in list_of_walls:
             self.print_wall(wall)
+
+        for door in list_of_doors:
+            self.print_door(door)
 
         for corner in list_of_corners.corner_list:
             self.print_corner(corner)
@@ -641,6 +675,22 @@ class LineExtractionPaper():
         else:
             self.iterative_end_point_fit(list_of_points_for_lines, breakpoints, start_of_region, farthest_point)
             self.iterative_end_point_fit(list_of_points_for_lines, breakpoints, farthest_point, end_of_region)
+
+    def door_extraction(self, list_of_walls):
+
+        list_of_doors = []
+        avg_door_length = 1.0
+        for wall1, wall2 in itertools.combinations(list_of_walls, 2):
+            angle_wall_wall = self.angle_between_lines(wall1,wall2)
+            distance = self.minimum_distance_between_lines(wall1,wall2)
+            if ((358 < angle_wall_wall or angle_wall_wall < 2) and avg_door_length - 0.2 < distance < avg_door_length + 0.2):
+                angle_end_start = self.angle_between_points(wall1.wall_end, wall2.wall_start)
+                angle_wall1 = self.angle_between_points(wall1.wall_start, wall1.wall_end)
+                angle_wall2 = self.angle_between_points(wall2.wall_start, wall2.wall_end)
+                if (angle_wall1 - 2 < angle_end_start < angle_wall1 + 2) and (angle_wall2 - 2 < angle_end_start < angle_wall2 + 2):
+                    list_of_doors.append(self.create_wall([wall1.wall_end, 0, wall1.wall_end_rupture, wall1.wall_end_break], [wall2.wall_start, 0, wall2.wall_start_rupture, wall2.wall_start_break]))
+                    #self.show_line_in_rviz(wall1.wall_end, wall2.wall_start,   line_color=ColorRGBA(1.0, 1.0, 0.0, 0.8))
+        return list_of_doors
 
 
     def find_corners(self, list_of_walls):
