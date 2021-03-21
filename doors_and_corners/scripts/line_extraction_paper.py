@@ -141,7 +141,7 @@ class LineExtractionPaper():
         """
         angle_line1 = self.angle_between_points(line1.wall_start, line1.wall_end)
         angle_line2 = self.angle_between_points(line2.wall_start, line2.wall_end)
-        angle_of_lines = abs(angle_line1 - angle_line2)
+        angle_of_lines = (angle_line1 - angle_line2) % 360
         return angle_of_lines
 
     def create_wall(self, start_point, end_point):
