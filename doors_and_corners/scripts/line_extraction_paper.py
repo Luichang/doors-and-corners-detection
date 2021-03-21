@@ -563,7 +563,7 @@ class LineExtractionPaper():
                             # check if the first or second point is contained in the previous Wall
                             if list_of_points_for_lines[line_index].wall_start == list_of_points_for_lines[line_index - 1].wall_end:
                                 angle_of_lines = self.angle_between_lines(list_of_points_for_lines[line_index], list_of_points_for_lines[line_index - 1])
-                                if angle_of_lines < min_angle or angle_of_lines > 360 - min_angle:
+                                if (angle_of_lines < min_angle) or (angle_of_lines > (360 - min_angle)):
                                     list_of_points_for_lines[line_index - 1].wall_end = list_of_points_for_lines[line_index].wall_end
                                     list_of_points_for_lines[line_index - 1].wall_end_rupture = list_of_points_for_lines[line_index].wall_end_rupture
                                     list_of_points_for_lines[line_index - 1].wall_end_break = list_of_points_for_lines[line_index].wall_end_break
@@ -572,7 +572,7 @@ class LineExtractionPaper():
                             if list_of_points_for_lines[line_index].wall_end == list_of_points_for_lines[line_index - 1].wall_start:
                                 # if we get in here the corner that has been detected is not an actual corner and should be removed
                                 angle_of_lines = self.angle_between_lines(list_of_points_for_lines[line_index], list_of_points_for_lines[line_index - 1])
-                                if angle_of_lines < min_angle or angle_of_lines > 360 - min_angle:
+                                if (angle_of_lines < min_angle) or (angle_of_lines > (360 - min_angle)):
                                     list_of_points_for_lines[line_index - 1].wall_start = list_of_points_for_lines[line_index].wall_start
                                     list_of_points_for_lines[line_index - 1].wall_start_rupture = list_of_points_for_lines[line_index].wall_start_rupture
                                     list_of_points_for_lines[line_index - 1].wall_start_break = list_of_points_for_lines[line_index].wall_start_break
