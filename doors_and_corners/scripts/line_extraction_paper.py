@@ -790,14 +790,24 @@ class LineExtractionPaper():
     def create_perpendicular_walls(self, list_of_lines_perpendicular, corner):
         if corner.corner_type == 0:
             return
-        from_wall = corner.first_wall
-        probing_wall_start = from_wall.wall_end
-        angle_wall = self.angle_between_points(corner.first_wall.wall_start, probing_wall_start)
+        wall_length_first = self.distance(corner.first_wall.wall_start, corner.first_wall.wall_end) # if this is longer than minimum length we use the wall
+        wall_length_second = self.distance(corner.second_wall.wall_start, corner.second_wall.wall_end) # if this is longer than minimum length we use the wall
+        angle_base = corner.first_wall.wall_start
+        probing_wall_start = corner.first_wall.wall_end
+        angles = [0,1]
+        longer_wall = wall_length_first
+        if wall_length_second > wall_length_first:
+            angle_base = corner.second_wall.wall_end
+            angles = [0,3]
+            longer_wall = wall_length_second
+        if longer_wall < 0.05:
+            return
+        angle_wall = self.angle_between_points(angle_base, probing_wall_start)
 
         # OK so my idea right now is that I add 90 degrees 3 times to this angle, I go out by some distance
         # figure out what those coordinates would be and convert them to be not relative to the corner but
         # relative to the robot
-        for i in [0,1]:
+        for i in angles:
             tmp_angle = (angle_wall + (i * 90)) % 360
             tempx, tempy = self.polar_to_cartesian(2.5, math.radians(tmp_angle))
             probing_point = Point(probing_wall_start.x + tempx, probing_wall_start.y + tempy, self.Z_OFFSET)
@@ -805,15 +815,15 @@ class LineExtractionPaper():
             probing_wall = self.create_wall([probing_wall_start, 0, False, False], [probing_point, 0, False, False])
             list_of_lines_perpendicular.append([probing_wall, corner.first_wall, corner.second_wall])
 
-        if corner.corner_type == 2:
-            angle_wall = -angle_wall
-            probing_wall_start = corner.first_wall.wall_start
-            for i in [0,1]:
-                tmp_angle = (angle_wall + (i * 90)) % 360
-                tempx, tempy = self.polar_to_cartesian(2.5, math.radians(tmp_angle))
-                probing_point = Point(probing_wall_start.x + tempx, probing_wall_start.y + tempy, self.Z_OFFSET)
-                probing_wall = self.create_wall([probing_wall_start, 0, False, False], [probing_point, 0, False, False])
-                list_of_lines_perpendicular.append([probing_wall, corner.first_wall, corner.second_wall])
+        # if corner.corner_type == 2:
+        #     angle_wall = -angle_wall
+        #     probing_wall_start = corner.first_wall.wall_start
+        #     for i in [1,2]:
+        #         tmp_angle = (angle_wall + (i * 90)) % 360
+        #         tempx, tempy = self.polar_to_cartesian(2.5, math.radians(tmp_angle))
+        #         probing_point = Point(probing_wall_start.x + tempx, probing_wall_start.y + tempy, self.Z_OFFSET)
+        #         probing_wall = self.create_wall([probing_wall_start, 0, False, False], [probing_point, 0, False, False])
+        #         list_of_lines_perpendicular.append([probing_wall, corner.first_wall, corner.second_wall])
 
 
 
