@@ -317,20 +317,43 @@ class LineExtractionPaper():
 
         return minimum_distance
 
-    def line_intersection(self, wall1, wall2):
-        xdiff = (wall1.wall_start.x - wall1.wall_end.x, wall2.wall_start.x - wall2.wall_end.x)
-        ydiff = (wall1.wall_start.y - wall1.wall_end.y, wall2.wall_start.y - wall2.wall_end.y)
+    # def line_intersection(self, wall1, wall2):
+    #     xdiff = (wall1.wall_start.x - wall1.wall_end.x, wall2.wall_start.x - wall2.wall_end.x)
+    #     ydiff = (wall1.wall_start.y - wall1.wall_end.y, wall2.wall_start.y - wall2.wall_end.y)
+    #
+    #     def det(a, b):
+    #         return a[0] * b[1] - a[1] * b[0]
+    #
+    #     div = det(xdiff, ydiff)
+    #     if div == 0:
+    #        return None, None # returning None as these walls do not intersect
+    #
+    #     d = (det([wall1.wall_start.x, wall1.wall_start.y],[wall1.wall_end.x, wall1.wall_end.y]), det([wall2.wall_start.x, wall2.wall_start.y],[wall2.wall_end.x, wall2.wall_end.y]))
+    #     x = det(d, xdiff) / div
+    #     y = det(d, ydiff) / div
+    #     return x, y
 
-        def det(a, b):
-            return a[0] * b[1] - a[1] * b[0]
+    def line_intersection(self, wall1, wall2): #Ax1, Ay1, Ax2, Ay2, Bx1, By1, Bx2, By2):
+        """ returns a (x, y) tuple or None if there is no intersection """
+        wall1_start_x = wall1.wall_start.x
+        wall1_start_y = wall1.wall_start.y
+        wall1_end_x =   wall1.wall_end.x
+        wall1_end_y =   wall1.wall_end.y
+        wall2_start_x = wall2.wall_start.x
+        wall2_start_y = wall2.wall_start.y
+        wall2_end_x =   wall2.wall_end.x
+        wall2_end_y =   wall2.wall_end.y
+        d = (wall2_end_y - wall2_start_y) * (wall1_end_x - wall1_start_x) - (wall2_end_x - wall2_start_x) * (wall1_end_y - wall1_start_y)
+        if d:
+            uA = ((wall2_end_x - wall2_start_x) * (wall1_start_y - wall2_start_y) - (wall2_end_y - wall2_start_y) * (wall1_start_x - wall2_start_x)) / d
+            uB = ((wall1_end_x - wall1_start_x) * (wall1_start_y - wall2_start_y) - (wall1_end_y - wall1_start_y) * (wall1_start_x - wall2_start_x)) / d
+        else:
+            return None, None
+        if not(0 <= uA <= 1 and 0 <= uB <= 1):
+            return None, None
+        x = wall1_start_x + uA * (wall1_end_x - wall1_start_x)
+        y = wall1_start_y + uA * (wall1_end_y - wall1_start_y)
 
-        div = det(xdiff, ydiff)
-        if div == 0:
-           return None, None # returning None as these walls do not intersect
-
-        d = (det([wall1.wall_start.x, wall1.wall_start.y],[wall1.wall_end.x, wall1.wall_end.y]), det([wall2.wall_start.x, wall2.wall_start.y],[wall2.wall_end.x, wall2.wall_end.y]))
-        x = det(d, xdiff) / div
-        y = det(d, ydiff) / div
         return x, y
 
 
