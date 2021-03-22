@@ -22,12 +22,12 @@ class LineExtractionPaper():
     def __init__(self):
 
         # defining constants
-        self.ANGLE_INCREMENT = 0 # 0.017501922324299812 # degrees
+        self.ANGLE_INCREMENT = 0 # 0.017501922324299812 # radians
         self.ANGLES = []
 
         self.SIGMA_R = 0.03 # meters
-        self.LAMBDA = 10 # degrees
-        self.D_MAX_CONSTANT = math.sin(math.radians(self.ANGLE_INCREMENT))/math.sin(math.radians(self.LAMBDA-self.ANGLE_INCREMENT))
+        self.LAMBDA = 0.174533 # radians = 10 degrees
+        self.D_MAX_CONSTANT = math.sin(self.ANGLE_INCREMENT)/math.sin(self.LAMBDA-self.ANGLE_INCREMENT)
 
 
         self.Z_OFFSET = 0.1
@@ -64,7 +64,7 @@ class LineExtractionPaper():
 
         Args:
             distance (float): The distance that the Robot is away from the point that is being viewed
-            angle    (float): The angle that the Robot is away from the point that is being viewed
+            angle    (float): The angle (in radians) that the Robot is away from the point that is being viewed
 
         Returns:
             pointX (float): the X coordinate
@@ -124,7 +124,7 @@ class LineExtractionPaper():
         y2 = point2.y
         dX = x2 - x1
         dY = y2 - y1
-        rads = math.atan2(-dY, dX)
+        rads = math.atan2(dY, dX)
         deg = math.degrees(rads)
         return deg
 
@@ -384,7 +384,7 @@ class LineExtractionPaper():
         if not self.ANGLES:
             self.ANGLE_INCREMENT = data.angle_increment
             self.ANGLES = [x for x in np.arange(data.angle_min, data.angle_max, self.ANGLE_INCREMENT)]
-            self.D_MAX_CONSTANT = math.sin(math.radians(self.ANGLE_INCREMENT))/math.sin(math.radians(self.LAMBDA-self.ANGLE_INCREMENT))
+            self.D_MAX_CONSTANT = math.sin(self.ANGLE_INCREMENT)/math.sin(self.LAMBDA-self.ANGLE_INCREMENT)
 
         points = self.preprocessing(data)
 
