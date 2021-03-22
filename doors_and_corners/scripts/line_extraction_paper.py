@@ -268,25 +268,18 @@ class LineExtractionPaper():
                 break
 
         if add_potential_corner:
+            temp_wall = self.create_wall([wall.wall_end, 0, False, False], [wall.wall_end, 0, False, False])
             if wall.wall_end_rupture or wall.wall_end_break:
                 new_corner = Corner()
                 new_corner.first_wall = wall
-                new_corner.second_wall = wall
+                new_corner.second_wall = temp_wall
                 new_corner.corner_type = 2
                 corner_list.corner_list.append(new_corner)
 
             if wall.wall_start_rupture or wall.wall_start_break:
-                tmp_wall = Wall()
-                tmp_wall.wall_start = wall.wall_end
-                tmp_wall.wall_end = wall.wall_start
-                tmp_wall.wall_start_rupture = wall.wall_end_rupture
-                tmp_wall.wall_start_break = wall.wall_end_break
-                tmp_wall.wall_end_rupture = wall.wall_start_rupture
-                tmp_wall.wall_end_break = wall.wall_start_break
-
                 new_corner = Corner()
-                new_corner.first_wall = tmp_wall
-                new_corner.second_wall = tmp_wall
+                new_corner.first_wall = temp_wall
+                new_corner.second_wall = wall
                 new_corner.corner_type = 2
                 corner_list.corner_list.append(new_corner)
 
