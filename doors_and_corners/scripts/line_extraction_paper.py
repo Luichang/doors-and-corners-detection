@@ -837,31 +837,26 @@ class LineExtractionPaper():
         #             if ((dist_to_origin - 0.1) < self.distance_line_to_point(line1[1].wall_start, line1[1].wall_end, Point(0,0,self.Z_OFFSET))
         #             and (dist_to_origin - 0.1) < self.distance_line_to_point(line2[1].wall_start, line2[1].wall_end, Point(0,0,self.Z_OFFSET))):
         #                 self.show_point_in_rviz(intersect_pt, ColorRGBA(1.0, 1.0, 0.0, 0.8))
-
-        counter1 = 0
-        counter2 = 0
-        for line, wall in itertools.product(list_of_lines_perpendicular, list_of_walls.wall_list):
-            if wall == line[1] or wall == line[2]:
-                continue
-            intersect_x, intersect_y = self.line_intersection(line[0], wall)
-            if intersect_x is not None:
-                counter1 += 1
-                #print(1, counter1)
-                intersect_pt = Point(intersect_x, intersect_y, self.Z_OFFSET)
-                dist_to_origin = self.distance(intersect_pt, Point(0,0,self.Z_OFFSET))
-                if dist_to_origin < 3:
-                    counter2 += 1
-                    #print(2, counter2)
-                    # tempx = (intersect_x+wall.wall_end.x)/2
-                    # tempy = (intersect_y+wall.wall_end.y)/2
-                    tempx = (line[0].wall_start.x+wall.wall_end.x)/2
-                    tempy = (line[0].wall_start.y+wall.wall_end.y)/2
-                    #print(intersect_x, wall.wall_end.x, tempx, ", ", intersect_y, wall.wall_end.y, tempy, counter2)
-                    intersect_pt = Point(tempx, tempy, self.Z_OFFSET)
-                    dist = self.distance_line_to_point(wall.wall_start, wall.wall_end, intersect_pt)#line_intersection(intersect_pt, wall)
-                    if dist > 0.00:
-                        self.show_point_in_rviz(intersect_pt, ColorRGBA(1.0, 1.0, 0.0, 0.8))
-                        #print(dist)
+        for line in list_of_lines_perpendicular:
+            self.print_wall(line[0])
+            for wall in list_of_walls.wall_list:
+                if wall == line[1] or wall == line[2]:
+                    continue
+                intersect_x, intersect_y = self.line_intersection(line[0], wall)
+                if intersect_x is not None:
+                    intersect_pt = Point(intersect_x, intersect_y, self.Z_OFFSET)
+                    dist_to_origin = self.distance(intersect_pt, Point(0,0,self.Z_OFFSET))
+                    dist_to_corner = self.distance(intersect_pt, line[0].wall_start)
+                    if dist_to_origin < 3:# and 1 < dist_to_corner:
+                        # tempx = (intersect_x+wall.wall_end.x)/2
+                        # tempy = (intersect_y+wall.wall_end.y)/2
+                        tempx = (line[0].wall_start.x+wall.wall_end.x)/2
+                        tempy = (line[0].wall_start.y+wall.wall_end.y)/2
+                        intersect_pt = Point(tempx, tempy, self.Z_OFFSET)
+                        dist = self.distance_line_to_point(wall.wall_start, wall.wall_end, intersect_pt)#line_intersection(intersect_pt, wall)
+                        dist_to_origin = self.distance(intersect_pt, Point(0,0,self.Z_OFFSET))
+                        if dist > 0.3 and dist_to_origin > 0.5:
+                            self.show_point_in_rviz(intersect_pt, ColorRGBA(1.0, 1.0, 0.0, 0.8))
 
 
     def find_corridors(self, list_of_walls):
