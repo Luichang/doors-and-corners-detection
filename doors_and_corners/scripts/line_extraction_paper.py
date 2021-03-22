@@ -812,6 +812,15 @@ class LineExtractionPaper():
             probing_wall = self.create_wall([probing_wall_start, 0, False, False], [probing_point, 0, False, False])
             list_of_lines_perpendicular.append([probing_wall, corner.first_wall, corner.second_wall])
 
+        if corner.corner_type == 2:
+            angle_wall = -angle_wall
+            probing_wall_start = corner.first_wall.wall_start
+            for i in [0,1]:
+                tmp_angle = (angle_wall + (i * 90)) % 360
+                tempx, tempy = self.polar_to_cartesian(2.5, math.radians(tmp_angle))
+                probing_point = Point(probing_wall_start.x + tempx, probing_wall_start.y + tempy, self.Z_OFFSET)
+                probing_wall = self.create_wall([probing_wall_start, 0, False, False], [probing_point, 0, False, False])
+                list_of_lines_perpendicular.append([probing_wall, corner.first_wall, corner.second_wall])
 
 
 
