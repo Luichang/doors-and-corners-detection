@@ -52,8 +52,13 @@ find_package(catkin REQUIRED COMPONENTS
  add_message_files(
    FILES
    Wall.msg
+   WallList.msg
+   Door.msg
+   DoorList.msg
    Corner.msg
    CornerList.msg
+   Corridor.msg
+   CorridorList.msg
 #   Message1.msg
 #   Message2.msg
  )

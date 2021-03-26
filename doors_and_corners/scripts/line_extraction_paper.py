@@ -4,7 +4,7 @@ from sensor_msgs.msg import LaserScan
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Quaternion, Pose, Point, Vector3
 from std_msgs.msg import Header, ColorRGBA
-from doors_and_corners.msg import Wall, Corner, CornerList
+from doors_and_corners.msg import Wall, WallList, Door, DoorList, Corner, CornerList
 import itertools
 import math, numpy as np
 from scipy import stats
@@ -167,6 +167,30 @@ class LineExtractionPaper():
         new_wall.wall_end_rupture = end_point[2]
         new_wall.wall_end_break = end_point[3]
         return new_wall
+
+    def create_door(self, door_list, first_wall, second_wall):
+        """
+        This function exsists solely to create a uniform wall object. It is important to note,
+        going from the start_point to the end_point, if one looks to the left side of that, there
+        is to be empty, traversable space.
+
+        Args:
+            start_point (List): the start point of the wall with the flaggs associated with that point
+            end_point (List): the end point of the wall with the flaggs associated with that point
+
+        Returns:
+            wall (List): list containing the first and last point of a wall, indicating the
+                         straight line segment created by the wall
+        """
+        new_door = Door()
+        #[wall1.wall_end, 0, wall1.wall_end_rupture, wall1.wall_end_break], [wall2.wall_start, 0, wall2.wall_start_rupture, wall2.wall_start_break])
+        new_door.door_start = first_wall.wall_end
+        new_door.door_end = second_wall.wall_start
+        new_door.door_start_rupture = first_wall.wall_end_rupture
+        new_door.door_start_break = first_wall.wall_end_break
+        new_door.door_end_rupture = second_wall.wall_start_rupture
+        new_door.door_end_break = second_wall.wall_start_break
+        door_list.door_list.append(new_door)
 
     def create_corner(self, corner_list, first_wall, second_wall):
         """
@@ -350,7 +374,7 @@ class LineExtractionPaper():
 
     def print_door(self, door):
         line_color = ColorRGBA(0, 1, 0, 0.7)
-        self.show_line_in_rviz(door.wall_start, door.wall_end, line_color)
+        self.show_line_in_rviz(door.door_start, door.door_end, line_color)
 
     def print_corner(self, corner):
         """
@@ -406,10 +430,10 @@ class LineExtractionPaper():
 
         list_of_corners = self.find_corners(list_of_walls)
 
-        for wall in list_of_walls:
+        for wall in list_of_walls.wall_list:
             self.print_wall(wall)
 
-        for door in list_of_doors:
+        for door in list_of_doors.door_list:
             self.print_door(door)
 
         for corner in list_of_corners.corner_list:
@@ -557,11 +581,7 @@ class LineExtractionPaper():
                                              the start point of the wall and it's flags and the end point
 
         """
-
-        list_of_lines = [] # a line is a list consisting of:
-        # p = polar discance of the line, a = polar angle, covariance matrix of (p, a)^T,
-        # xa = one end of the line, ya = same end only y coordinate,
-        # xb = other end x coordinate, yb = other end only y coordinate
+        wall_list = WallList()
 
         min_angle = 10 # this is the minimum angle to be counted as a corner. anything less
         # will be considered as the same wall. this should not be too large, else
@@ -623,7 +643,9 @@ class LineExtractionPaper():
                             #         list_of_points_for_lines.pop(line_index)
                             #         continue
 
-        return list_of_points_for_lines
+        for wall in list_of_points_for_lines:
+            wall_list.wall_list.append(wall)
+        return wall_list
                 #         self.print_wall(list_of_points_for_lines[line_index])
                 #         print(line_index, len(list_of_points_for_lines))
                 #         for second_line_index in range(line_index, len(list_of_points_for_lines)):
@@ -678,9 +700,9 @@ class LineExtractionPaper():
 
     def door_extraction(self, list_of_walls):
 
-        list_of_doors = []
+        list_of_doors = DoorList()
         avg_door_length = 1.0
-        for wall1, wall2 in itertools.combinations(list_of_walls, 2):
+        for wall1, wall2 in itertools.combinations(list_of_walls.wall_list, 2):
             angle_wall_wall = self.angle_between_lines(wall1,wall2)
             distance = self.minimum_distance_between_lines(wall1,wall2)
             if ((358 < angle_wall_wall or angle_wall_wall < 2) and avg_door_length - 0.2 < distance < avg_door_length + 0.2):
@@ -688,7 +710,7 @@ class LineExtractionPaper():
                 angle_wall1 = self.angle_between_points(wall1.wall_start, wall1.wall_end)
                 angle_wall2 = self.angle_between_points(wall2.wall_start, wall2.wall_end)
                 if (angle_wall1 - 2 < angle_end_start < angle_wall1 + 2) and (angle_wall2 - 2 < angle_end_start < angle_wall2 + 2):
-                    list_of_doors.append(self.create_wall([wall1.wall_end, 0, wall1.wall_end_rupture, wall1.wall_end_break], [wall2.wall_start, 0, wall2.wall_start_rupture, wall2.wall_start_break]))
+                    self.create_door(list_of_doors, wall1, wall2)
                     #self.show_line_in_rviz(wall1.wall_end, wall2.wall_start,   line_color=ColorRGBA(1.0, 1.0, 0.0, 0.8))
         return list_of_doors
 
@@ -711,8 +733,8 @@ class LineExtractionPaper():
         list_of_corners = CornerList()
 
 
-        for first_wall in list_of_walls:
-            for second_wall in list_of_walls:
+        for first_wall in list_of_walls.wall_list:
+            for second_wall in list_of_walls.wall_list:
                 if first_wall == second_wall:
                     continue
                 if first_wall.wall_end == second_wall.wall_start:

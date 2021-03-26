@@ -1,0 +1,2 @@
+geometry_msgs/Point corridor_midpoint
+
