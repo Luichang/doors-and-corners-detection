@@ -45,7 +45,9 @@ class LineExtractionPaper():
         self.point_id = 0
 
         # feature collection
-        self.corners = [] # features list
+        self.list_of_walls = WallList()
+        self.list_of_doors = DoorList()
+        self.list_of_corners = CornerList()
 
         # initializing rospy publishers and subscribers
         rospy.init_node('clusters', anonymous=True)
@@ -414,32 +416,20 @@ class LineExtractionPaper():
 
         breakpoints = self.breakpoint_detection(points)
 
-        # for point in breakpoints:
-        #     #  breakpoint            rupture
-        #     if point[3] == False and point[2] == False:
-        #         self.show_point_in_rviz(point[0], ColorRGBA(0.0, 1.0, 0.0, 0.8))
-        #     elif point[3] == False and point[2] == True:
-        #         self.show_point_in_rviz(point[0], ColorRGBA(1.0, 0.0, 0.0, 0.8))
-        #     elif point[3] == True and point[2] == False:
-        #         self.show_point_in_rviz(point[0], ColorRGBA(0.0, 0.0, 1.0, 0.8))
-        #     elif point[3] == True and point[2] == True:
-        #         self.show_point_in_rviz(point[0], ColorRGBA(0.0, 1.0, 1.0, 0.8))
-        list_of_walls = self.line_extraction(breakpoints)
+        self.list_of_walls = self.line_extraction(breakpoints)
+        self.list_of_doors = self.door_extraction(self.list_of_walls)
+        self.list_of_corners = self.find_corners(self.list_of_walls)
 
-        list_of_doors = self.door_extraction(list_of_walls)
-
-        list_of_corners = self.find_corners(list_of_walls)
-
-        for wall in list_of_walls.wall_list:
+        for wall in self.list_of_walls.wall_list:
             self.print_wall(wall)
 
-        for door in list_of_doors.door_list:
+        for door in self.list_of_doors.door_list:
             self.print_door(door)
 
-        for corner in list_of_corners.corner_list:
+        for corner in self.list_of_corners.corner_list:
             self.print_corner(corner)
 
-        self.corner_pub.publish(list_of_corners)
+        self.corner_pub.publish(self.list_of_corners)
 
 
 
@@ -459,10 +449,6 @@ class LineExtractionPaper():
         """
 
         scans = data.ranges
-
-        # TODO preprocessing/compensation needed, this way the points are supposed to try and be more accurate
-
-
 
         points = []
 
@@ -632,35 +618,10 @@ class LineExtractionPaper():
                                     list_of_points_for_lines[line_index - 1].wall_start_break = list_of_points_for_lines[line_index].wall_start_break
                                     list_of_points_for_lines.pop(line_index)
                                     continue
-                            # if (list_of_points_for_lines[line_index].wall_start == list_of_points_for_lines[line_index - 1].wall_start
-                            # or list_of_points_for_lines[line_index].wall_end == list_of_points_for_lines[line_index - 1].wall_end):
-                            #     angle_of_lines = self.angle_between_lines(list_of_points_for_lines[line_index], list_of_points_for_lines[line_index - 1])
-                            #     if angle_of_lines < min_angle or angle_of_lines > 360 - min_angle:
-                            #         # if we get in here the corner that has been detected is not an actual corner and should be removed
-                            #         list_of_points_for_lines[line_index - 1].wall_start = list_of_points_for_lines[line_index].wall_start
-                            #         list_of_points_for_lines[line_index - 1].wall_start_rupture = list_of_points_for_lines[line_index].wall_start_rupture
-                            #         list_of_points_for_lines[line_index - 1].wall_start_break = list_of_points_for_lines[line_index].wall_start_break
-                            #         list_of_points_for_lines.pop(line_index)
-                            #         continue
 
         for wall in list_of_points_for_lines:
             wall_list.wall_list.append(wall)
         return wall_list
-                #         self.print_wall(list_of_points_for_lines[line_index])
-                #         print(line_index, len(list_of_points_for_lines))
-                #         for second_line_index in range(line_index, len(list_of_points_for_lines)):
-                #             if list_of_points_for_lines[line_index][1] == list_of_points_for_lines[second_line_index][0]:
-                #                 self.create_corner(list_of_corners, list_of_points_for_lines[line_index], list_of_points_for_lines[second_line_index])
-                #                 break
-                #
-                #             # you could think that the symmetrical case would allso occure, but at least the way the scans are made and walls created it
-                #             # does not seem to come up
-                #             # if list_of_points_for_lines[line_index][0] == list_of_points_for_lines[second_line_index][1]:
-                #             #     self.create_corner(list_of_corners, list_of_points_for_lines[line_index], list_of_points_for_lines[second_line_index], False)
-                #             #     break
-                # # temp list of points that make up the whole line?
-                #
-                # # L <- Omega^S union Omega^S_* /* Add the lines to the main list */
 
     def iterative_end_point_fit(self, list_of_points_for_lines, breakpoints, start_of_region, end_of_region):
         """
