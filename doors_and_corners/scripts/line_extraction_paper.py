@@ -4,7 +4,7 @@ from sensor_msgs.msg import LaserScan
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Quaternion, Pose, Point, Vector3
 from std_msgs.msg import Header, ColorRGBA
-from doors_and_corners.msg import Wall, WallList, Door, DoorList, Corner, CornerList
+from doors_and_corners.msg import Wall, WallList, Door, DoorList, Corner, CornerList, Corridor, CorridorList
 import itertools
 import math, numpy as np
 from scipy import stats
@@ -49,6 +49,7 @@ class LineExtractionPaper():
         self.list_of_walls = WallList()
         self.list_of_doors = DoorList()
         self.list_of_corners = CornerList()
+        self.list_of_corridors = CorridorList()
 
         # initializing rospy publishers and subscribers
         rospy.init_node('clusters', anonymous=True)
@@ -430,6 +431,9 @@ class LineExtractionPaper():
 
         self.show_point_in_rviz(corner.first_wall.wall_end, corner_color)
 
+    def print_corridor(self,corridor):
+        self.show_point_in_rviz(corridor, ColorRGBA(1.0, 1.0, 0.0, 0.8))
+
     def callback(self, data):
         """ Essentially the main function of the program, this will call any functions
         required to get to the final answer: what set of points is a door
@@ -453,10 +457,7 @@ class LineExtractionPaper():
         self.list_of_walls = self.line_extraction(breakpoints)
         self.list_of_doors = self.door_extraction(self.list_of_walls)
         self.list_of_corners = self.find_corners(self.list_of_walls)
-
-        self.find_corridors(self.list_of_walls)
-
-        self.find_corridor_entrances(self.list_of_corners, self.list_of_walls)
+        self.list_of_corridors = self.find_corridor_entrances(self.list_of_corners, self.list_of_walls)
 
         for wall in self.list_of_walls.wall_list:
             self.print_wall(wall)
@@ -466,6 +467,9 @@ class LineExtractionPaper():
 
         for corner in self.list_of_corners.corner_list:
             self.print_corner(corner)
+
+        for corridor in self.list_of_corridors.corridor_list:
+            self.print_corridor(corridor)
 
         self.corner_pub.publish(self.list_of_corners)
 
@@ -832,6 +836,7 @@ class LineExtractionPaper():
         """
         Trying to find the entrances of corridors here.
         """
+        list_of_corridors = CorridorList()
         list_of_lines_perpendicular = []
         for corner in list_of_corners.corner_list:
             if self.distance(corner.first_wall.wall_end, Point(0,0,self.Z_OFFSET)) < 3:
@@ -850,7 +855,7 @@ class LineExtractionPaper():
         #             and (dist_to_origin - 0.1) < self.distance_line_to_point(line2[1].wall_start, line2[1].wall_end, Point(0,0,self.Z_OFFSET))):
         #                 self.show_point_in_rviz(intersect_pt, ColorRGBA(1.0, 1.0, 0.0, 0.8))
         for line in list_of_lines_perpendicular:
-            self.print_wall(line[0])
+            #self.print_wall(line[0])
             for wall in list_of_walls.wall_list:
                 if wall == line[1] or wall == line[2]:
                     continue
@@ -868,7 +873,8 @@ class LineExtractionPaper():
                         dist = self.distance_line_to_point(wall.wall_start, wall.wall_end, intersect_pt)#line_intersection(intersect_pt, wall)
                         dist_to_origin = self.distance(intersect_pt, Point(0,0,self.Z_OFFSET))
                         if dist > 0.3 and dist_to_origin > 0.5:
-                            self.show_point_in_rviz(intersect_pt, ColorRGBA(1.0, 1.0, 0.0, 0.8))
+                            list_of_corridors.corridor_list.append(intersect_pt)
+        return list_of_corridors
 
 
     def find_corridors(self, list_of_walls):
