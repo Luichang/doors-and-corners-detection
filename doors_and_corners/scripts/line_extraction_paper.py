@@ -105,7 +105,7 @@ class LineExtractionPaper():
             dist (float): the distance from the point to the line
         """
         numerator = abs((p2.y - p1.y) * p3.x - (p2.x - p1.x) * p3.y + p2.x * p1.y - p2.y * p1.x)
-        denominator = math.sqrt((p2.y - p1.y) ** 2 + (p2.x - p1.x) ** 2)
+        denominator = self.distance(p1, p2)
         dist = numerator / denominator
         return dist
 
@@ -285,31 +285,23 @@ class LineExtractionPaper():
                 corner_list.corner_list.append(new_corner)
 
 
-    def minimum_distance_between_lines(self, first_wall, second_wall):
-        minimum_distance = 100.0
-        point_one_one = first_wall.wall_start
-        point_one_two = first_wall.wall_end
 
-        point_two_one = second_wall.wall_start
-        point_two_two = second_wall.wall_end
-
-        dist = self.distance(first_wall.wall_start, second_wall.wall_start)
-        if dist < minimum_distance:
-            minimum_distance = dist
-
-        dist = self.distance(first_wall.wall_start, second_wall.wall_end)
-        if dist < minimum_distance:
-            minimum_distance = dist
-
-        dist = self.distance(first_wall.wall_end, second_wall.wall_start)
-        if dist < minimum_distance:
-            minimum_distance = dist
-
-        dist = self.distance(first_wall.wall_end, second_wall.wall_end)
-        if dist < minimum_distance:
-            minimum_distance = dist
-
-        return minimum_distance
+    def minimum_distance_between_lines(self, wall1, wall2):
+        """ distance between two lines
+        Args:
+            wall1 (Wall): first Wall
+            wall2 (Wall): second Wall
+        Returns:
+            distance (float): minimum Euclidean distance between two Lines
+        """
+        if self.line_intersection(wall1, wall2)[0]: return 0
+        # try each of the 4 vertices w/the other segment
+        distances = []
+        distances.append(self.distance_line_to_point(wall1.wall_start, wall1.wall_end, wall2.wall_start))
+        distances.append(self.distance_line_to_point(wall1.wall_start, wall1.wall_end, wall2.wall_end))
+        distances.append(self.distance_line_to_point(wall2.wall_start, wall2.wall_end, wall1.wall_start))
+        distances.append(self.distance_line_to_point(wall2.wall_start, wall2.wall_end, wall1.wall_end))
+        return min(distances)
 
     # def line_intersection(self, wall1, wall2):
     #     xdiff = (wall1.wall_start.x - wall1.wall_end.x, wall2.wall_start.x - wall2.wall_end.x)
@@ -501,7 +493,7 @@ class LineExtractionPaper():
             rupture = True
 
             # if the scan returns a value that is not infinity, the default values are not used
-            if scan != 0.0:
+            if scan != 0.0 and scan < 6:
                 pointX, pointY = self.polar_to_cartesian(scan, i) #self.ANGLE_INCREMENT * (i + 1))
                 point_to_add = Point(pointX, pointY, self.Z_OFFSET)
                 rupture = False
@@ -707,7 +699,7 @@ class LineExtractionPaper():
         avg_door_length = 1.0
         for wall1, wall2 in itertools.combinations(list_of_walls.wall_list, 2):
             angle_wall_wall = self.angle_between_lines(wall1,wall2)
-            distance = self.minimum_distance_between_lines(wall1,wall2)
+            distance = self.distance(wall1.wall_end,wall2.wall_start)
             if ((358 < angle_wall_wall or angle_wall_wall < 2) and avg_door_length - 0.2 < distance < avg_door_length + 0.2):
                 angle_end_start = self.angle_between_points(wall1.wall_end, wall2.wall_start)
                 angle_wall1 = self.angle_between_points(wall1.wall_start, wall1.wall_end)
@@ -756,41 +748,6 @@ class LineExtractionPaper():
 
         return list_of_corners
 
-    # def create_perpendicular_walls(self, list_of_lines_perpendicular, corner):
-    #     if corner.corner_type == 0:
-    #         return
-    #     from_wall = corner.first_wall
-    #     probing_wall_start = from_wall.wall_start
-    #     angle_wall = self.angle_between_points(probing_wall_start, corner.first_wall.wall_end)
-    #
-    #     # OK so my idea right now is that I add 90 degrees 3 times to this angle, I go out by some distance
-    #     # figure out what those coordinates would be and convert them to be not relative to the corner but
-    #     # relative to the robot
-    #     max_counter = 0
-    #     while max_counter < 2:
-    #         for i in [1, 2, 3]:
-    #             # if corner.corner_type == 2 and i == 2:
-    #             #     continue
-    #             tmp_angle = -(angle_wall + (i * 90))
-    #             tempx, tempy = self.polar_to_cartesian(2.5, math.radians(tmp_angle))
-    #             probing_point = Point(probing_wall_start.x + tempx, probing_wall_start.y + tempy, self.Z_OFFSET)
-    #             probing_wall = self.create_wall([probing_wall_start, 0, False, False], [probing_point, 0, False, False])
-    #             #self.print_wall(probing_wall)
-    #             list_of_lines_perpendicular.append([probing_wall, corner.first_wall, corner.second_wall])
-    #
-    #         if max_counter == 0:
-    #             from_wall = corner.second_wall
-    #             probing_wall_start = from_wall.wall_end
-    #             angle_wall = self.angle_between_points(probing_wall_start, corner.first_wall.wall_end)
-    #             #if corner.corner_type == 1 or corner.corner_type == 2:
-    #             #    max_counter += 1
-    #             max_counter += 1
-    #         else:
-    #             from_wall = corner.first_wall
-    #             probing_wall_start = from_wall.wall_end
-    #             angle_wall = -angle_wall
-    #             max_counter += 1
-
     def create_perpendicular_walls(self, list_of_lines_perpendicular, corner):
         if corner.corner_type == 0:
             return
@@ -819,19 +776,6 @@ class LineExtractionPaper():
             probing_wall = self.create_wall([probing_wall_start, 0, False, False], [probing_point, 0, False, False])
             list_of_lines_perpendicular.append([probing_wall, corner.first_wall, corner.second_wall])
 
-        # if corner.corner_type == 2:
-        #     angle_wall = -angle_wall
-        #     probing_wall_start = corner.first_wall.wall_start
-        #     for i in [1,2]:
-        #         tmp_angle = (angle_wall + (i * 90)) % 360
-        #         tempx, tempy = self.polar_to_cartesian(2.5, math.radians(tmp_angle))
-        #         probing_point = Point(probing_wall_start.x + tempx, probing_wall_start.y + tempy, self.Z_OFFSET)
-        #         probing_wall = self.create_wall([probing_wall_start, 0, False, False], [probing_point, 0, False, False])
-        #         list_of_lines_perpendicular.append([probing_wall, corner.first_wall, corner.second_wall])
-
-
-
-
     def find_corridor_entrances(self, list_of_corners, list_of_walls):
         """
         Trying to find the entrances of corridors here.
@@ -842,20 +786,7 @@ class LineExtractionPaper():
             if self.distance(corner.first_wall.wall_end, Point(0,0,self.Z_OFFSET)) < 3:
                 self.create_perpendicular_walls(list_of_lines_perpendicular, corner)
 
-
-        # for line1, line2 in itertools.combinations(list_of_lines_perpendicular, 2):
-        #     if line1[0].wall_end == line2[0].wall_end:
-        #         continue
-        #     intersect_x, intersect_y = self.line_intersection(line1[0], line2[0])
-        #     if intersect_x is not None:
-        #         intersect_pt = Point(intersect_x, intersect_y, self.Z_OFFSET)
-        #         dist_to_origin = self.distance(intersect_pt, Point(0,0,self.Z_OFFSET))
-        #         if dist_to_origin < 3:
-        #             if ((dist_to_origin - 0.1) < self.distance_line_to_point(line1[1].wall_start, line1[1].wall_end, Point(0,0,self.Z_OFFSET))
-        #             and (dist_to_origin - 0.1) < self.distance_line_to_point(line2[1].wall_start, line2[1].wall_end, Point(0,0,self.Z_OFFSET))):
-        #                 self.show_point_in_rviz(intersect_pt, ColorRGBA(1.0, 1.0, 0.0, 0.8))
         for line in list_of_lines_perpendicular:
-            #self.print_wall(line[0])
             for wall in list_of_walls.wall_list:
                 if wall == line[1] or wall == line[2]:
                     continue
@@ -864,11 +795,9 @@ class LineExtractionPaper():
                     intersect_pt = Point(intersect_x, intersect_y, self.Z_OFFSET)
                     dist_to_origin = self.distance(intersect_pt, Point(0,0,self.Z_OFFSET))
                     dist_to_corner = self.distance(intersect_pt, line[0].wall_start)
-                    if dist_to_origin < 3:# and 1 < dist_to_corner:
-                        # tempx = (intersect_x+wall.wall_end.x)/2
-                        # tempy = (intersect_y+wall.wall_end.y)/2
-                        tempx = (line[0].wall_start.x+wall.wall_end.x)/2
-                        tempy = (line[0].wall_start.y+wall.wall_end.y)/2
+                    if dist_to_origin < 3:
+                        tempx = (line[0].wall_start.x+intersect_pt.x)/2
+                        tempy = (line[0].wall_start.y+intersect_pt.y)/2
                         intersect_pt = Point(tempx, tempy, self.Z_OFFSET)
                         dist = self.distance_line_to_point(wall.wall_start, wall.wall_end, intersect_pt)#line_intersection(intersect_pt, wall)
                         dist_to_origin = self.distance(intersect_pt, Point(0,0,self.Z_OFFSET))
