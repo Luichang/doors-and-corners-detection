@@ -1,12 +1,4 @@
 
-/Pictures
+/doors_and_corners/scripts/img/*
 *.pyc
-/beginner_tutorials
-/exercise_2
-/turtlebot3
-/turtlebot3_msgs
-/turtlebot3_simulations
-/visualization_tutorials
-Untitled.*
-feature_based_paper_runner*
 doors_and_corners/scripts/.ipynb_checkpoints/
